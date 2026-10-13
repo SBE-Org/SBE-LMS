@@ -1,9 +1,0 @@
-# For hosting where the project folder itself is the web root (shared hosting, XAMPP htdocs):
-# forward everything into frontend/public/ and block the rest of the project.
-Options -Indexes
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^(backend|tests|frontend/views)(/|$) - [F,L]
-    RewriteRule ^$ frontend/public/ [L]
-    RewriteRule ^((?!frontend/public/).*)$ frontend/public/$1 [L]
-</IfModule>

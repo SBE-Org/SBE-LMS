@@ -1,7 +1,0 @@
-# Send every request that is not a real file to index.php
-Options -Indexes
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [QSA,L]
-</IfModule>

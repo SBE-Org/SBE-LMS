@@ -1,4 +1,7 @@
-backend/config/config.php
-backend/storage/*.sqlite*
-backend/storage/uploads/*
-!backend/storage/uploads/.gitkeep
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+.vercel
+.DS_Store
