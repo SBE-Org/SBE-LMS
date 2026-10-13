@@ -1,0 +1,5 @@
+.git
+backend/config/config.php
+backend/storage/*.sqlite*
+backend/storage/uploads/*
+tests

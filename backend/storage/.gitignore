@@ -1,0 +1,6 @@
+*
+!.gitignore
+!.htaccess
+!uploads/
+uploads/*
+!uploads/.gitkeep
