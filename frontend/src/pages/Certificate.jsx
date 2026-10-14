@@ -1,18 +1,40 @@
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import { useFlash } from '../lib/flash.jsx';
 import { useApi, useBodyClass, useTitle } from '../lib/useApi.js';
 import { fmtDateLong } from '../lib/format.js';
+import { downloadCertificatePdf } from '../lib/certificatePdf.js';
 import Icon from '../components/Icon.jsx';
+import { Flashes } from '../components/Layout.jsx';
 import { Guard } from '../components/ui.jsx';
 
-/** Printable certificate (outside the normal layout, so it prints on one clean page). */
+/** Certificate page (outside the normal layout): download as PDF or print. */
 export default function CertificatePage() {
   const { code } = useParams();
   const { meta } = useAuth();
+  const { flash } = useFlash();
   const navigate = useNavigate();
   const state = useApi(`/certificates/${encodeURIComponent(code)}`);
+  const certRef = useRef(null);
+  const [saving, setSaving] = useState(false);
   useBodyClass('cert-body');
   useTitle(state.data ? `Certificate · ${state.data.certificate.courseTitle}` : 'Certificate', meta.appName);
+
+  const download = async () => {
+    if (!certRef.current) return;
+    setSaving(true);
+    try {
+      const c = state.data.certificate;
+      const safeName = c.learnerName.replace(/[\\/:*?"<>|]+/g, '').trim();
+      await downloadCertificatePdf(certRef.current, `Certificate ${c.code} - ${safeName}.pdf`);
+    } catch (e) {
+      console.error(e);
+      flash('error', 'The PDF could not be created. You can use “Print” and choose “Save as PDF” instead.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <>
@@ -20,13 +42,17 @@ export default function CertificatePage() {
         <button className="btn btn-ghost" type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/certificates'))}>
           <Icon name="arrow-left" />Back
         </button>
-        <button className="btn btn-primary" type="button" onClick={() => window.print()}><Icon name="print" />Print or save as PDF</button>
+        <button className="btn btn-primary" type="button" onClick={download} disabled={!state.data || saving}>
+          <Icon name="download" />{saving ? 'Preparing PDF…' : 'Download PDF'}
+        </button>
+        <button className="btn btn-ghost" type="button" onClick={() => window.print()}><Icon name="print" />Print</button>
       </div>
+      <div className="no-print" style={{ maxWidth: 1050, margin: '0 auto', padding: '0 16px' }}><Flashes /></div>
       <Guard state={state}>
         {({ certificate: c, company, appName }) => {
           const verifyUrl = `${window.location.origin}/verify?code=${encodeURIComponent(c.code)}`;
           return (
-            <div className="certificate">
+            <div className="certificate" ref={certRef}>
               <div className="cert-inner">
                 <div className="cert-top">
                   <span className="brand-mark brand-mark-lg">S</span>

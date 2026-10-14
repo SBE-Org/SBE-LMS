@@ -12,7 +12,8 @@ Everything from the PHP version is here:
 - **Roles:** agent, team lead, trainer and admin.
 - **Courses:** modules with reading, video and file lessons.
 - **Quizzes:** single-answer, multiple-answer and true/false questions, with a time limit, an attempt limit, shuffling and answer review.
-- **Completion:** automatic completion and certificates, plus a public page to verify a certificate.
+- **Completion:** automatic completion and certificates you can download as a PDF or print, plus a public page to verify a certificate.
+- **Failed quizzes:** learners see only their score, and a "Try again" button while they have attempts left. The questions and correct answers are shown only after a pass. The server enforces this, so answers can't be found in the browser's network data. Trainers, admins and team leads always see the full review.
 - **Enrolment:** people or whole teams, with due dates and auto-enrolment for people who join a team later.
 - **Reports:** scoped per team lead, with CSV exports.
 - **People:** CSV import of people, temporary passwords, a forced password change and login rate limiting.
@@ -152,6 +153,9 @@ frontend/
 
 ### How sign-in works
 The API returns a JWT on sign-in. The frontend keeps it in `localStorage` and sends it as `Authorization: Bearer …`. Changing a password or deactivating a person invalidates their old tokens. Lesson files open through short-lived signed links, so `<video>` and PDF previews work across the Vercel and API domains.
+
+### Certificate PDFs
+The **Download PDF** button builds an A4 landscape PDF in the browser (html2canvas + jsPDF, loaded only when clicked). Because it uses the device's own fonts, Amharic names come out correctly. **Print** is still there too.
 
 ### Lesson files
 Uploads (PDF, Word, PowerPoint, Excel, MP4, MP3, images) are stored **inside MongoDB with GridFS**, so they survive redeploys on hosts with temporary disks, such as Render or Railway. Videos are streamed with range requests, so learners can skip ahead.

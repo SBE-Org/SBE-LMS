@@ -12,7 +12,7 @@ export default function Certificates() {
   return (
     <>
       <div className="page-head">
-        <div><h1>My certificates</h1><p className="muted">Print them or save them as PDF. Anyone can check a certificate is genuine on the verification page.</p></div>
+        <div><h1>My certificates</h1><p className="muted">Download them as PDF or print them. Anyone can check a certificate is genuine on the verification page.</p></div>
       </div>
       <Guard state={state}>
         {({ certificates }) =>

@@ -82,7 +82,7 @@ export default function QuizIntro() {
                         <td>{fmtDateTime(a.submittedAt)}</td>
                         <td>{a.score}/{a.maxScore} ({a.percent}%)</td>
                         <td>{a.passed ? <Badge tone="success">Passed</Badge> : <Badge tone="danger">Not passed</Badge>}</td>
-                        <td className="right"><Link to={`/attempts/${a._id}/result`}>Review</Link></td>
+                        <td className="right"><Link to={`/attempts/${a._id}/result`}>{a.passed ? 'Review' : 'View result'}</Link></td>
                       </tr>
                     ))}
                   </tbody>

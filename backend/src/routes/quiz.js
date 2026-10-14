@@ -168,23 +168,31 @@ router.get('/attempts/:id/result', requireAuth, async (req, res) => {
     QuizAttempt.countDocuments({ user: attempt.user, quiz: quiz._id, status: 'submitted' }),
     Enrolment.findOne({ user: attempt.user, course: quiz.course }, 'completedAt').lean(),
   ]);
+  // A learner who did not pass only sees their score, never the questions or answers,
+  // so the next attempt still tests what they know. Staff and team leads always see the full review.
+  const reviewHidden = isOwner && !attempt.passed;
   const showAnswers = quiz.showAnswers || !isOwner;
-  const answers = Object.fromEntries(attempt.answers.map((a) => [String(a.question), { correct: a.correct, selected: a.selected.map(String) }]));
+  const remaining = quiz.maxAttempts > 0 ? Math.max(0, quiz.maxAttempts - used) : null;
+  const answers = reviewHidden
+    ? {}
+    : Object.fromEntries(attempt.answers.map((a) => [String(a.question), { correct: a.correct, selected: a.selected.map(String) }]));
   res.json({
     status: 'submitted',
     attempt: {
       _id: attempt._id, user: attempt.user, score: attempt.score, maxScore: attempt.maxScore,
       percent: attempt.percent, passed: attempt.passed, submittedAt: attempt.submittedAt,
     },
-    quiz: { _id: quiz._id, title: quiz.title, passMark: quiz.passMark },
+    quiz: { _id: quiz._id, title: quiz.title, passMark: quiz.passMark, timeLimitMin: quiz.timeLimitMin, maxAttempts: quiz.maxAttempts },
     course,
     learner,
     isOwner,
+    reviewHidden,
     showAnswers,
     canRetry: isOwner && (quiz.maxAttempts === 0 || used < quiz.maxAttempts),
+    remaining: isOwner ? remaining : null,
     courseComplete: !!enrolment?.completedAt,
     answers,
-    questions: questions.map((q) => ({
+    questions: reviewHidden ? [] : questions.map((q) => ({
       _id: q._id,
       body: q.body,
       type: q.type,

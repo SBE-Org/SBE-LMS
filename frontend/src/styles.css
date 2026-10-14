@@ -434,6 +434,10 @@ input[type=file] { font: inherit; font-size: .9rem; padding: 8px; border: 1px da
   .page-head .actions { width: 100%; }
 }
 
+/* Copy of the certificate drawn into the PDF download (see lib/certificatePdf.js) */
+.certificate.cert-pdf { aspect-ratio: auto; margin: 0; box-shadow: none; padding: 16px; }
+.cert-pdf .cert-inner { outline: 0; box-shadow: inset 0 0 0 6px var(--brand-soft); }
+
 @media print {
   .no-print, .cert-toolbar { display: none !important; }
   @page { size: A4 landscape; margin: 0; }

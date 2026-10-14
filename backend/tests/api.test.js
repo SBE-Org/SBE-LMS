@@ -134,6 +134,9 @@ try {
   await agent.post(`/attempts/${attemptId}`, { answers: wrong });
   let a = await M.QuizAttempt.findById(attemptId);
   check('Wrong answers → 0% and not passed', a.status === 'submitted' && a.percent === 0 && !a.passed);
+  r = await agent.get(`/attempts/${attemptId}/result`);
+  check('Failed attempt shows only the score: no questions or answers sent', r.status === 200 && r.json.reviewHidden === true && r.json.questions.length === 0 && Object.keys(r.json.answers).length === 0);
+  check('Failed attempt offers another try while attempts remain', r.json.canRetry === true);
   await agent.post(`/attempts/${attemptId}`, { answers: {} });
   a = await M.QuizAttempt.findById(attemptId);
   check('Re-submitting a graded attempt changes nothing', a.answers.length === questions.length && a.percent === 0);
@@ -144,6 +147,7 @@ try {
   await agent.post(`/attempts/${attempt2}`, { answers: right });
   r = await agent.get(`/attempts/${attempt2}/result`);
   check('Correct answers → passed with 100%', r.json.attempt?.passed === true && r.json.attempt.percent === 100);
+  check('Passed attempt includes the question review', r.json.reviewHidden === false && r.json.questions.length === questions.length);
   const enrol = await M.Enrolment.findOne({ user: agentUser._id, course: cid });
   check('Course marked complete', !!enrol.completedAt);
   const myCert = await M.Certificate.findOne({ user: agentUser._id, course: cid });
@@ -255,6 +259,8 @@ try {
   check('Learner report', r.status === 200 && r.json.attempts.length >= 2);
   r = await tr.get(`/attempts/${attempt2}/result`);
   check("Trainer can review a learner's answers", r.status === 200 && r.json.isOwner === false);
+  r = await tr.get(`/attempts/${attemptId}/result`);
+  check("Trainer still sees the full review of a failed attempt", r.json.reviewHidden === false && r.json.questions.length > 0);
   r = await tr.get('/reports/export?type=enrolments');
   check('Progress CSV export', r.status === 200 && r.text.includes('Progress %') && /text\/csv/.test(r.headers.get('content-type')));
   r = await tr.get('/reports/export?type=attempts');
