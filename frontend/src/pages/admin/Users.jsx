@@ -3,14 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { qs } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.jsx';
 import { useApi, useTitle } from '../../lib/useApi.js';
-import { fmtDateTime, initials, plural, ROLES } from '../../lib/format.js';
+import { fmtDateTime, initials, plural, ROLES, ACCOUNT_STATUS } from '../../lib/format.js';
 import Icon from '../../components/Icon.jsx';
-import { Badge, Guard } from '../../components/ui.jsx';
+import { Badge, Guard, RegistrationBadge } from '../../components/ui.jsx';
 
 export default function Users() {
   const { meta } = useAuth();
   const [params, setParams] = useSearchParams();
-  const f = { q: params.get('q') || '', role: params.get('role') || '', team: params.get('team') || '', status: params.get('status') || 'active' };
+  const f = { q: params.get('q') || '', role: params.get('role') || '', team: params.get('team') || '', department: params.get('department') || '', status: params.get('status') || 'active' };
   const [search, setSearch] = useState(f.q);
   const state = useApi(`/admin/users${qs(f)}`);
   useTitle('People', meta.appName);
@@ -36,9 +36,14 @@ export default function Users() {
           <option value="">All teams</option>
           {(state.data?.teams || []).map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
         </select>
+        <select value={f.department} onChange={(e) => apply({ department: e.target.value })} aria-label="Department">
+          <option value="">All departments</option>
+          {(state.data?.departments || []).map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
+        </select>
         <select value={f.status} onChange={(e) => apply({ status: e.target.value })} aria-label="Status">
           <option value="active">Active</option>
-          <option value="inactive">Deactivated</option>
+          <option value="suspended">Suspended</option>
+          <option value="inactive">Suspended or deactivated</option>
           <option value="all">Everyone</option>
         </select>
         <button className="btn btn-ghost" type="submit">Filter</button>
@@ -47,7 +52,7 @@ export default function Users() {
         {({ users }) => (
           <div className="card table-wrap">
             <table className="table">
-              <thead><tr><th>Name</th><th>Role</th><th>Team</th><th>Courses</th><th>Last sign-in</th><th /></tr></thead>
+              <thead><tr><th>Name</th><th>Role</th><th>Department / team</th><th>Courses</th><th>Last sign-in</th><th /></tr></thead>
               <tbody>
                 {users.map((u) => (
                   <tr key={u._id} className={u.active ? '' : 'is-muted'}>
@@ -57,8 +62,12 @@ export default function Users() {
                         <span><strong>{u.name}</strong><br /><small className="muted">{u.email}{u.employeeId ? ` · ${u.employeeId}` : ''}</small></span>
                       </span>
                     </td>
-                    <td>{ROLES[u.role] || u.role}{!u.active && <> <Badge>Deactivated</Badge></>}</td>
-                    <td className="small">{u.teamName || '—'}</td>
+                    <td>
+                      {ROLES[u.role] || u.role}
+                      {u.accountStatus !== 'active' && <> <Badge tone={ACCOUNT_STATUS[u.accountStatus]?.[1]}>{ACCOUNT_STATUS[u.accountStatus]?.[0] || 'Deactivated'}</Badge></>}
+                      {u.registrationStatus && u.registrationStatus !== 'approved' && <><br /><RegistrationBadge status={u.registrationStatus} /></>}
+                    </td>
+                    <td className="small">{u.departmentName || '—'}{u.teamName && <><br /><span className="muted">{u.teamName}</span></>}</td>
                     <td className="small">{u.completed}/{u.enrolments} done</td>
                     <td className="small muted">{u.lastLoginAt ? fmtDateTime(u.lastLoginAt) : 'Never'}</td>
                     <td className="right nowrap">

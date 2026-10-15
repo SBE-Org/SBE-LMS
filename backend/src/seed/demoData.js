@@ -1,5 +1,5 @@
 import {
-  User, Team, Course, Module, Lesson, Quiz, Question, QuizAttempt, Enrolment, TeamCourse, LessonProgress, Certificate,
+  User, Team, Department, Course, Module, Lesson, Quiz, Question, QuizAttempt, Enrolment, TeamCourse, LessonProgress, Certificate,
 } from '../models/index.js';
 import { hashPassword } from '../utils/password.js';
 import { today, addDays } from '../utils/dates.js';
@@ -63,11 +63,28 @@ async function simulateAttempt(r, userId, quiz, skill, when) {
 export async function seedDemo(adminId) {
   const r = rng(2026);
   const pw = await hashPassword('Welcome@123');
-  const mkUser = async (name, email, role, team, employeeId) =>
+  const approved = (when) => ({
+    status: 'approved', source: 'registrar', submittedAt: when, reviewedAt: when, termsAcceptedAt: when,
+    history: [{ status: 'pending', action: 'created_by_staff', at: when }, { status: 'approved', action: 'approved', byName: 'Demo data', at: when }],
+  });
+  const mkUser = async (name, email, role, team, employeeId, extra = {}) =>
     (await User.create({
-      name, email, passwordHash: pw, role, team, employeeId, active: true, mustChangePassword: false,
+      name, email, passwordHash: pw, role, team, employeeId, active: true, accountStatus: 'active', mustChangePassword: false,
       createdAt: ts(60), lastLoginAt: ts(r.int(0, 6), r.int(8, 17)),
+      ...(role === 'agent' ? { registration: approved(ts(55)) } : {}),
+      ...extra,
     }))._id;
+
+  // ---- departments (one per team in the demo) ----
+  const deptDefs = [
+    ['Customer Service', 'CS', 'Inbound and outbound customer care programmes.', ['Customer Care Associate', 'Technical Support Associate']],
+    ['Sales & Retention', 'SALES', 'Telesales, retention and collections programmes.', ['Telesales Associate', 'Retention Specialist']],
+    ['Back Office Operations', 'BO', 'Data entry, verification and processing programmes.', ['Data Processing Associate']],
+  ];
+  const departments = [];
+  for (const [name, code, description, programs] of deptDefs) {
+    departments.push((await Department.create({ name, code, description, programs }))._id);
+  }
 
   // ---- teams and people ----
   const teamDefs = [
@@ -92,13 +109,47 @@ export async function seedDemo(adminId) {
   const agents = [];
   for (const [i, [name, t]] of agentNames.entries()) {
     const email = `${name.toLowerCase().replace(/ /g, '.')}@shaggar.test`;
-    agents.push({ id: await mkUser(name, email, 'agent', teams[t], `SHG-A${String(i + 1).padStart(3, '0')}`), team: t });
+    agents.push({
+      id: await mkUser(name, email, 'agent', teams[t], `SHG-A${String(i + 1).padStart(3, '0')}`, {
+        department: departments[t], phone: `+251 911 ${String(100000 + i * 7919).slice(0, 6)}`, profile: { program: deptDefs[t][3][0] },
+      }),
+      team: t,
+    });
+  }
+
+  // ---- Department Heads, a registrar and new applications waiting for review ----
+  await mkUser('Kidist Mulugeta', 'head.cs@shaggar.test', 'department_head', null, 'SHG-H01', { department: departments[0], departments: [departments[0]] });
+  await mkUser('Henok Tadesse', 'head.sales@shaggar.test', 'department_head', null, 'SHG-H02', { department: departments[1], departments: [departments[1], departments[2]] });
+  await mkUser('Saron Bekele', 'registrar@shaggar.test', 'registrar', null, 'SHG-R01', { departments: [] });
+  const applicants = [
+    ['Meseret Alemayehu', 0, 'self', 'pending', null],
+    ['Yared Solomon', 0, 'registrar', 'pending', null],
+    ['Feven Girma', 1, 'self', 'correction_requested', 'Please upload a copy of your highest education certificate.'],
+  ];
+  for (const [i, [name, d, source, status, reason]] of applicants.entries()) {
+    const when = ts(3 - i);
+    await User.create({
+      name, email: `${name.toLowerCase().replace(/ /g, '.')}@shaggar.test`, passwordHash: pw, role: 'agent', active: true, accountStatus: 'active',
+      mustChangePassword: false, department: departments[d], phone: `+251 912 30${i}45${i}`, createdAt: when,
+      profile: { program: deptDefs[d][3][0], educationLevel: 'Diploma' },
+      registration: {
+        status, source, submittedAt: when, termsAcceptedAt: when, reason,
+        reviewedAt: status === 'pending' ? null : ts(1),
+        history: [
+          { status: 'pending', action: source === 'self' ? 'submitted' : 'created_by_staff', at: when },
+          ...(status === 'correction_requested' ? [{ status, action: 'correction_requested', byName: 'Henok Tadesse', byRole: 'department_head', reason, at: ts(1) }] : []),
+        ],
+      },
+    });
   }
 
   // ---- courses ----
   const courseIds = [];
-  for (const c of demoCourses) {
+  // Call handling belongs to Customer Service; the other demo courses are institution-wide.
+  const courseDept = [null, departments[0], null, null];
+  for (const [ci, c] of demoCourses.entries()) {
     const course = await Course.create({
+      department: courseDept[ci] || null,
       title: c.title, summary: c.summary, category: c.category, status: 'published', selfEnrol: c.selfEnrol,
       certificateEnabled: true, createdBy: adminId, createdAt: ts(45), updatedAt: ts(20),
     });

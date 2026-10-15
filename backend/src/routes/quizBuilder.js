@@ -3,14 +3,16 @@ import { Router } from 'express';
 import { Course, Quiz, Question, QuizAttempt } from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { deleteQuiz, deleteQuestion, nextPosition, touchCourse } from '../services/content.js';
-import { invalid, findOr404, str, intOr, bool, arr } from '../utils/http.js';
+import { invalid, str, intOr, bool, arr } from '../utils/http.js';
+import { scoped } from '../services/courseAccess.js';
 
 const router = Router();
-router.use(requireAuth, requireRole('admin', 'trainer'));
+router.use(requireAuth, requireRole('admin', 'trainer', 'department_head'));
 
-const getQuiz = (id) => findOr404(Quiz, id, 'This quiz does not exist.');
-const getCourse = (id) => findOr404(Course, id, 'This course does not exist.');
-const getQuestion = (id) => findOr404(Question, id, 'This question does not exist.');
+// Every lookup also checks the user's department scope (Department Heads: own departments only).
+const getQuiz = (id, req) => scoped(req, Quiz, id, 'This quiz does not exist.');
+const getCourse = (id, req) => scoped(req, Course, id, 'This course does not exist.');
+const getQuestion = (id, req) => scoped(req, Question, id, 'This question does not exist.');
 
 function quizData(b) {
   const t = intOr(b.timeLimitMin);
@@ -26,11 +28,11 @@ function quizData(b) {
 }
 
 router.get('/courses/:id/quiz-form', async (req, res) => {
-  res.json({ course: await getCourse(req.params.id) });
+  res.json({ course: await getCourse(req.params.id, req) });
 });
 
 router.post('/courses/:id/quizzes', async (req, res) => {
-  const course = await getCourse(req.params.id);
+  const course = await getCourse(req.params.id, req);
   const data = quizData(req.body);
   if (!data.title) invalid(['Enter a quiz title.']);
   const quiz = await Quiz.create({ ...data, course: course._id, position: await nextPosition(Quiz, { course: course._id }) });
@@ -39,9 +41,9 @@ router.post('/courses/:id/quizzes', async (req, res) => {
 });
 
 router.get('/quizzes/:id', async (req, res) => {
-  const quiz = await getQuiz(req.params.id);
+  const quiz = await getQuiz(req.params.id, req);
   const [course, questions, attempts] = await Promise.all([
-    getCourse(quiz.course),
+    getCourse(quiz.course, req),
     Question.find({ quiz: quiz._id }).sort({ position: 1, _id: 1 }).lean(),
     QuizAttempt.countDocuments({ quiz: quiz._id, status: 'submitted' }),
   ]);
@@ -50,7 +52,7 @@ router.get('/quizzes/:id', async (req, res) => {
 });
 
 router.put('/quizzes/:id', async (req, res) => {
-  const quiz = await getQuiz(req.params.id);
+  const quiz = await getQuiz(req.params.id, req);
   const data = quizData(req.body);
   if (!data.title) invalid(['Enter a quiz title.']);
   Object.assign(quiz, data);
@@ -59,7 +61,7 @@ router.put('/quizzes/:id', async (req, res) => {
 });
 
 router.delete('/quizzes/:id', async (req, res) => {
-  const quiz = await getQuiz(req.params.id);
+  const quiz = await getQuiz(req.params.id, req);
   await deleteQuiz(quiz._id);
   await touchCourse(quiz.course);
   res.json({ courseId: quiz.course, message: `Quiz “${quiz.title}” and its results were deleted.` });
@@ -99,12 +101,12 @@ function questionInput(b) {
 }
 
 router.get('/quizzes/:id/question-form', async (req, res) => {
-  const quiz = await getQuiz(req.params.id);
-  res.json({ quiz, course: await getCourse(quiz.course) });
+  const quiz = await getQuiz(req.params.id, req);
+  res.json({ quiz, course: await getCourse(quiz.course, req) });
 });
 
 router.post('/quizzes/:id/questions', async (req, res) => {
-  const quiz = await getQuiz(req.params.id);
+  const quiz = await getQuiz(req.params.id, req);
   const { data, choices } = questionInput(req.body);
   const question = await Question.create({
     ...data,
@@ -117,14 +119,14 @@ router.post('/quizzes/:id/questions', async (req, res) => {
 });
 
 router.get('/questions/:id', async (req, res) => {
-  const question = await getQuestion(req.params.id);
+  const question = await getQuestion(req.params.id, req);
   question.choices.sort((a, b) => a.position - b.position);
-  const quiz = await getQuiz(question.quiz);
-  res.json({ question, quiz, course: await getCourse(quiz.course) });
+  const quiz = await getQuiz(question.quiz, req);
+  res.json({ question, quiz, course: await getCourse(quiz.course, req) });
 });
 
 router.put('/questions/:id', async (req, res) => {
-  const question = await getQuestion(req.params.id);
+  const question = await getQuestion(req.params.id, req);
   const { data, choices } = questionInput(req.body);
   // Keep choice ids stable (update in place) so past attempts still show what was picked
   const old = [...question.choices].sort((a, b) => a.position - b.position);
@@ -135,7 +137,7 @@ router.put('/questions/:id', async (req, res) => {
 });
 
 router.delete('/questions/:id', async (req, res) => {
-  const question = await getQuestion(req.params.id);
+  const question = await getQuestion(req.params.id, req);
   await deleteQuestion(question);
   res.json({ quizId: question.quiz, message: 'Question deleted.' });
 });

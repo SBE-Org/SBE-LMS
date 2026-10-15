@@ -14,6 +14,7 @@ export default function Certificates() {
       <div className="page-head">
         <div><h1>My certificates</h1><p className="muted">Download them as PDF or print them. Anyone can check a certificate is genuine on the verification page.</p></div>
       </div>
+      {state.data?.pending > 0 && <div className="flash flash-info">{state.data.pending === 1 ? 'One certificate is' : `${state.data.pending} certificates are`} waiting for authorisation by your department. You will be notified when it is issued.</div>}
       <Guard state={state}>
         {({ certificates }) =>
           !certificates.length ? (

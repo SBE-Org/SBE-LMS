@@ -6,7 +6,23 @@ import { useFlash } from '../../lib/flash.jsx';
 import { useApi, useTitle } from '../../lib/useApi.js';
 import { capitalize, fmtDate } from '../../lib/format.js';
 import Icon from '../../components/Icon.jsx';
+import Logo from '../../components/Logo.jsx';
 import { Badge, Guard, ProgressBar } from '../../components/ui.jsx';
+
+/** Letterhead shown only when a report is printed (logo if "Printable documents and reports" is on). */
+export function PrintHeader({ title }) {
+  const { meta } = useAuth();
+  return (
+    <div className="print-only report-print-head">
+      <Logo placement="reports" nameFallback={false} />
+      <div><strong>{title}</strong><small>{meta.company} · printed {fmtDate(new Date())}</small></div>
+    </div>
+  );
+}
+
+export const PrintButton = () => (
+  <button type="button" className="btn btn-ghost no-print" onClick={() => window.print()}><Icon name="print" />Print</button>
+);
 
 /** Team filter shared by the report pages. */
 export function TeamFilter({ options, team, isTeamLead, onChange }) {
@@ -71,12 +87,13 @@ export default function ReportsOverview() {
   const { flash } = useFlash();
   const [params, setParams] = useSearchParams();
   const team = params.get('team') || '';
-  const state = useApi(`/reports${qs({ team })}`);
+  const department = params.get('department') || '';
+  const state = useApi(`/reports${qs({ team, department })}`);
   useTitle('Reports', meta.appName);
 
   const exportCsv = async (type) => {
     try {
-      await download(`/reports/export${qs({ team, type })}`, `${type}.csv`);
+      await download(`/reports/export${qs({ team, department, type })}`, `${type}.csv`);
     } catch (e) {
       flash('error', e.message);
     }
@@ -84,19 +101,35 @@ export default function ReportsOverview() {
 
   return (
     <Guard state={state}>
-      {({ summary, courses, teams, learners, teamOptions, isTeamLead }) => (
+      {({ summary, courses, teams, departments = [], learners, teamOptions, departmentOptions = [], isTeamLead, isDepartmentHead }) => (
         <>
+          <PrintHeader title="Training report" />
           <div className="page-head">
-            <div><h1>Reports</h1><p className="muted">{isTeamLead ? 'Training progress for the teams you lead.' : `Training progress across ${meta.company}.`}</p></div>
-            <div className="actions">
+            <div><h1>Reports</h1><p className="muted">{isTeamLead ? 'Training progress for the teams you lead.' : isDepartmentHead ? 'Training progress of the students in your departments.' : `Training progress across ${meta.company}.`}</p></div>
+            <div className="actions no-print">
+              <PrintButton />
               <button type="button" className="btn btn-ghost" onClick={() => exportCsv('enrolments')}><Icon name="download" />Progress CSV</button>
               <button type="button" className="btn btn-ghost" onClick={() => exportCsv('attempts')}><Icon name="download" />Quiz results CSV</button>
             </div>
           </div>
 
-          {teamOptions.length ? (
-            <TeamFilter options={teamOptions} team={team} isTeamLead={isTeamLead} onChange={(v) => setParams(v ? { team: v } : {})} />
-          ) : isTeamLead ? (
+          {(teamOptions.length > 0 || departmentOptions.length > 1) && (
+            <form className="toolbar no-print" onSubmit={(e) => e.preventDefault()}>
+              {departmentOptions.length > 1 && (
+                <select value={department} onChange={(e) => setParams(e.target.value ? { department: e.target.value } : {})} aria-label="Department">
+                  <option value="">{isDepartmentHead ? 'All my departments' : 'All departments'}</option>
+                  {departmentOptions.map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
+                </select>
+              )}
+              {teamOptions.length > 0 && (
+                <select value={team} onChange={(e) => setParams(e.target.value ? { team: e.target.value } : {})} aria-label="Team">
+                  <option value="">{isTeamLead ? 'All my teams' : 'All teams'}</option>
+                  {teamOptions.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+                </select>
+              )}
+            </form>
+          )}
+          {teamOptions.length ? null : isTeamLead ? (
             <div className="flash flash-info">You are not set as the lead of any team yet. Ask an administrator to set you as team lead on the team page.</div>
           ) : null}
 
@@ -130,7 +163,30 @@ export default function ReportsOverview() {
             </div>
           </section>
 
-          {(teams.length > 1 || !team) && (
+          {departments.length > 0 && !isTeamLead && (departments.length > 1 || !department) && (
+            <section className="section">
+              <h2>By department</h2>
+              <div className="card table-wrap">
+                <table className="table">
+                  <thead><tr><th>Department</th><th className="num">People</th><th className="num">Enrolments</th><th>Completion</th><th className="num">Overdue</th><th className="num">Avg score</th></tr></thead>
+                  <tbody>
+                    {departments.map((t) => (
+                      <tr key={t._id || 'none'}>
+                        <td>{t._id ? <Link to={`/reports?department=${t._id}`}><strong>{t.name}</strong></Link> : <span className="muted">{t.name}</span>}</td>
+                        <td className="num">{t.people}</td>
+                        <td className="num">{t.enrolled}</td>
+                        <td className="w-progress"><ProgressBar pct={t.rate} /><small className="muted">{t.rate}%</small></td>
+                        <td className={`num ${t.overdue ? 'text-danger' : ''}`}>{t.overdue}</td>
+                        <td className="num">{pctText(t.avgScore)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {!isDepartmentHead && (teams.length > 1 || !team) && (
             <section className="section">
               <h2>By team</h2>
               <div className="card table-wrap">

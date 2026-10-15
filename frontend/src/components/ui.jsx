@@ -51,7 +51,17 @@ export function Loading() {
 
 const TITLES = { 0: 'Connection problem', 401: 'Please sign in', 403: 'Access denied', 404: 'Page not found', 419: 'Session expired', 500: 'Something went wrong' };
 
-export function ErrorPage({ status = 404, message }) {
+export function ErrorPage({ status = 404, message, code }) {
+  if (code === 'REGISTRATION_NOT_APPROVED') {
+    return (
+      <div className="empty-state error-page">
+        <Icon name="lock" className="icon icon-xl" />
+        <h1>Registration not approved yet</h1>
+        {message && <p className="muted">{message}</p>}
+        <p><Link className="btn btn-primary" to="/registration"><Icon name="clipboard" />View my registration</Link></p>
+      </div>
+    );
+  }
   return (
     <div className="empty-state error-page">
       <p className="error-code">{status || '!'}</p>
@@ -62,9 +72,16 @@ export function ErrorPage({ status = 404, message }) {
   );
 }
 
+/** Registration status badge (students). */
+export function RegistrationBadge({ status }) {
+  const map = { pending: ['Pending review', 'warning'], correction_requested: ['Correction requested', 'info'], approved: ['Approved', 'success'], rejected: ['Rejected', 'danger'] };
+  if (!map[status]) return null;
+  return <Badge tone={map[status][1]}>{map[status][0]}</Badge>;
+}
+
 /** Shows Loading or ErrorPage while a useApi() request is pending or failed. */
 export function Guard({ state, children }) {
-  if (state.error) return <ErrorPage status={state.error.status} message={state.error.message} />;
+  if (state.error) return <ErrorPage status={state.error.status} message={state.error.message} code={state.error.code} />;
   if (state.loading || !state.data) return <Loading />;
   return children(state.data);
 }

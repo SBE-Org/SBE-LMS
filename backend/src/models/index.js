@@ -1,6 +1,11 @@
-export { User, ROLES } from './User.js';
+export { User, ROLES, STUDENT_ROLE, ACCOUNT_STATUSES, REGISTRATION_STATUSES } from './User.js';
 export { Team } from './Team.js';
+export { Department } from './Department.js';
 export { LoginAttempt } from './LoginAttempt.js';
 export { Course, Module, Lesson } from './Course.js';
 export { Quiz, Question, QuizAttempt } from './Quiz.js';
-export { Enrolment, TeamCourse, LessonProgress, Certificate } from './Enrolment.js';
+export { Enrolment, TeamCourse, LessonProgress, Certificate, ISSUED } from './Enrolment.js';
+export { AuditLog } from './AuditLog.js';
+export { Notification } from './Notification.js';
+export { Settings, LOGO_PLACEMENTS, DEFAULT_PLACEMENTS, REGISTRATION_FIELDS, DEFAULT_REGISTRATION_FIELDS } from './Settings.js';
+export { Counter, nextSequence } from './Counter.js';

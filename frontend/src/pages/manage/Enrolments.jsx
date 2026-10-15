@@ -9,7 +9,7 @@ import Icon from '../../components/Icon.jsx';
 import { ActionButton, Crumbs, EnrolmentBadge, Guard, ProgressBar } from '../../components/ui.jsx';
 
 function AssignForm({ data, onDone }) {
-  const { course, teams, users, today } = data;
+  const { course, teams, users, today, canUseTeams = true } = data;
   const { flashAll, flash } = useFlash();
   const [teamIds, setTeamIds] = useState([]);
   const [userIds, setUserIds] = useState([]);
@@ -52,7 +52,9 @@ function AssignForm({ data, onDone }) {
   return (
     <form onSubmit={submit} className="card form">
       <h2>Assign this course</h2>
-      <div className="grid-2">
+      {!canUseTeams && <p className="muted small">You can enrol approved students of your department(s). Students still waiting for registration approval are not listed.</p>}
+      <div className={canUseTeams ? 'grid-2' : ''}>
+        {canUseTeams && (
         <div className="field">
           <span className="label">Teams</span>
           <div className="check-list">
@@ -68,6 +70,7 @@ function AssignForm({ data, onDone }) {
             <input type="checkbox" checked={autoEnrolNew} onChange={(e) => setAutoEnrolNew(e.target.checked)} /> <span>Also enrol people who join these teams later</span>
           </label>
         </div>
+        )}
         <div className="field">
           <label htmlFor="user_ids" className="label">Individual people <small className="muted">(hold Ctrl / ⌘ to pick several)</small></label>
           <input type="search" className="filter-input" placeholder="Filter by name or team" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter people" />

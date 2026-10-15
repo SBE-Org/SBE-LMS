@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Quiz, Question, QuizAttempt, Course, Enrolment, User } from '../models/index.js';
-import { requireAuth, canSeePerson } from '../middleware/auth.js';
+import { requireAuth, canSeePerson, assertCanLearn } from '../middleware/auth.js';
 import { viewableCourse } from './learn.js';
 import { isEnrolled, checkCompletion } from '../services/progress.js';
 import { fail, findOr404, sameId } from '../utils/http.js';
@@ -139,6 +139,7 @@ router.get('/attempts/:id', requireAuth, async (req, res) => {
 router.post('/attempts/:id', requireAuth, async (req, res) => {
   const attempt = await loadAttempt(req.user, req.params.id);
   if (!sameId(attempt.user, req.user)) fail(403, 'You do not have permission to open this page.');
+  assertCanLearn(req.user);
   if (attempt.status !== 'in_progress') return res.json({ status: 'submitted' });
   const quiz = await loadQuiz(attempt.quiz);
   const end = deadline(quiz, attempt);
@@ -156,6 +157,7 @@ router.get('/attempts/:id/result', requireAuth, async (req, res) => {
   const u = req.user;
   const attempt = await loadAttempt(u, req.params.id);
   const isOwner = sameId(attempt.user, u);
+  if (isOwner) assertCanLearn(u);
   if (attempt.status !== 'submitted') {
     if (isOwner) return res.json({ status: 'in_progress' });
     fail(404, 'This attempt has not been submitted yet.');

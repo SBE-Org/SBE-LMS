@@ -7,7 +7,7 @@ import { useApi, useTitle } from '../../lib/useApi.js';
 import Icon from '../../components/Icon.jsx';
 import { Crumbs, Errors, Guard } from '../../components/ui.jsx';
 
-const BLANK = { title: '', summary: '', category: '', status: 'draft', selfEnrol: false, certificateEnabled: true };
+const BLANK = { title: '', summary: '', category: '', status: 'draft', selfEnrol: false, certificateEnabled: true, certificateRequiresApproval: false, department: '' };
 const STATUS_LABELS = {
   draft: 'Draft — hidden from learners',
   published: 'Published — visible to enrolled learners',
@@ -30,7 +30,11 @@ export default function CourseForm() {
   useEffect(() => {
     if (!state.data) return;
     const c = state.data.course;
-    setForm(c ? { title: c.title, summary: c.summary || '', category: c.category || '', status: c.status, selfEnrol: c.selfEnrol, certificateEnabled: c.certificateEnabled } : BLANK);
+    const firstDept = !state.data.canChooseNoDepartment && state.data.departments?.length ? String(state.data.departments[0]._id) : '';
+    setForm(c ? {
+      title: c.title, summary: c.summary || '', category: c.category || '', status: c.status, selfEnrol: c.selfEnrol, certificateEnabled: c.certificateEnabled,
+      certificateRequiresApproval: !!c.certificateRequiresApproval, department: c.department ? String(c.department) : '',
+    } : { ...BLANK, department: firstDept });
   }, [state.data]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -82,8 +86,18 @@ export default function CourseForm() {
                 </select>
               </label>
             </div>
-            <label className="check"><input type="checkbox" checked={form.selfEnrol} onChange={set('selfEnrol')} /> <span><strong>Open to everyone</strong> — any signed-in person can join without being assigned</span></label>
+            <label className="field"><span>Department</span>
+              <select value={form.department} onChange={set('department')} required={!data.canChooseNoDepartment}>
+                {data.canChooseNoDepartment && <option value="">Institution-wide (no department)</option>}
+                {(data.departments || []).map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
+              </select>
+              <small className="muted">Department courses are managed by that department’s Head; when open to join, only its students see them.</small>
+            </label>
+            <label className="check"><input type="checkbox" checked={form.selfEnrol} onChange={set('selfEnrol')} /> <span><strong>Open to join</strong> — approved students (of the course’s department, if it has one) can join without being assigned</span></label>
             <label className="check"><input type="checkbox" checked={form.certificateEnabled} onChange={set('certificateEnabled')} /> <span><strong>Issue a certificate</strong> when a learner finishes every lesson and passes every quiz</span></label>
+            {form.certificateEnabled && (
+              <label className="check"><input type="checkbox" checked={form.certificateRequiresApproval} onChange={set('certificateRequiresApproval')} /> <span><strong>Certificates need authorisation</strong> — the Department Head (or an administrator) must authorise each certificate before it is issued</span></label>
+            )}
             <div className="actions">
               <button className="btn btn-primary" type="submit" disabled={busy}>{id ? 'Save changes' : 'Create course'}</button>
               <Link className="btn btn-ghost" to={id ? `/manage/courses/${id}` : '/manage/courses'}>Cancel</Link>

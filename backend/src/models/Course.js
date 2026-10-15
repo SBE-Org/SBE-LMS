@@ -10,6 +10,10 @@ const courseSchema = new mongoose.Schema(
     status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
     selfEnrol: { type: Boolean, default: false },
     certificateEnabled: { type: Boolean, default: true },
+    /** When on, a finished learner's certificate waits for a Department Head / administrator to authorise it. */
+    certificateRequiresApproval: { type: Boolean, default: false },
+    /** Owning department. null = institution-wide (managed by administrators and trainers). */
+    department: { type: ObjectId, ref: 'Department', default: null, index: true },
     createdBy: { type: ObjectId, ref: 'User', default: null },
   },
   { timestamps: true }

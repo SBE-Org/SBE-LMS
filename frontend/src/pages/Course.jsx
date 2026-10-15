@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { useAuth, isStaff } from '../lib/auth.jsx';
+import { useAuth, canBuild } from '../lib/auth.jsx';
+import Logo from '../components/Logo.jsx';
 import { useFlash } from '../lib/flash.jsx';
 import { useApi, useTitle } from '../lib/useApi.js';
 import { fmtDate, plural } from '../lib/format.js';
@@ -33,9 +34,10 @@ export default function CoursePage() {
         const enrolled = !!enrolment;
         const next = outline.next;
         const minutes = outline.lessons.reduce((s, l) => s + (l.durationMin || 0), 0);
-        const staff = isStaff(user);
+        const staff = canBuild(user);
         return (
           <>
+            <Logo placement="coursePages" className="course-logo" nameFallback={false} />
             <Crumbs items={[['Courses', '/courses'], [course.title]]} />
             {!enrolled && staff && (
               <div className="flash flash-info">

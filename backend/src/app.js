@@ -7,7 +7,8 @@ import mongoose from 'mongoose';
 import { config } from './config.js';
 import { HttpError } from './utils/http.js';
 import { UPLOAD_TYPES } from './services/files.js';
-import { User } from './models/index.js';
+import { User, Department } from './models/index.js';
+import { getSettings, publicBranding, publicRegistration } from './services/settings.js';
 
 import authRoutes from './routes/auth.js';
 import installRoutes from './routes/install.js';
@@ -19,6 +20,9 @@ import manageRoutes from './routes/manage.js';
 import quizBuilderRoutes from './routes/quizBuilder.js';
 import adminRoutes from './routes/admin.js';
 import reportRoutes from './routes/reports.js';
+import registrationRoutes from './routes/registrations.js';
+import settingsRoutes from './routes/settings.js';
+import notificationRoutes from './routes/notifications.js';
 
 export function createApp() {
   const app = express();
@@ -42,13 +46,20 @@ export function createApp() {
   app.get('/api/health', (req, res) => res.json({ status: 'ok', db: mongoose.connection.readyState === 1 ? 'up' : 'down' }));
 
   // Public settings the frontend needs before sign-in
+  // (no personal data: branding, the registration form and the list of active departments)
   app.get('/api/meta', async (req, res) => {
+    const installed = !!(await User.exists({}));
+    const settings = installed ? await getSettings() : null;
+    const branding = settings ? publicBranding(settings) : null;
     res.json({
-      appName: config.appName,
-      company: config.company,
-      installed: !!(await User.exists({})),
+      appName: branding?.appName || config.appName,
+      company: branding?.institutionName || config.company,
+      installed,
       maxUploadMb: config.maxUploadMb,
       uploadTypes: Object.keys(UPLOAD_TYPES),
+      branding,
+      registration: settings ? publicRegistration(settings) : null,
+      departments: installed ? await Department.find({ active: true }, 'name code programs').sort({ name: 1 }).lean() : [],
     });
   });
 
@@ -62,6 +73,9 @@ export function createApp() {
   app.use('/api/manage', quizBuilderRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/reports', reportRoutes);
+  app.use('/api/notifications', notificationRoutes);
+  app.use('/api', registrationRoutes); // /registration/me, /registrations
+  app.use('/api', settingsRoutes); // /branding/files, /admin/settings
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'We could not find that page.' }));
 

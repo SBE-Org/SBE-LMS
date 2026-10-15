@@ -41,6 +41,21 @@ const certificateSchema = new mongoose.Schema({
   course: { type: ObjectId, ref: 'Course', required: true, index: true },
   code: { type: String, required: true, unique: true },
   issuedAt: { type: Date, default: Date.now },
+  /**
+   * issued  = valid (all certificates created before this field existed count as issued)
+   * pending = course finished, waiting for the issuing authority to authorise it
+   * revoked = withdrawn by an administrator
+   */
+  status: { type: String, enum: ['issued', 'pending', 'revoked'], default: 'issued', index: true },
+  completedAt: { type: Date, default: null },
+  authorizedBy: { type: ObjectId, ref: 'User', default: null },
+  authorizedAt: { type: Date, default: null },
+  revokedBy: { type: ObjectId, ref: 'User', default: null },
+  revokedAt: { type: Date, default: null },
+  revokeReason: { type: String, maxlength: 500, default: null },
 });
 certificateSchema.index({ user: 1, course: 1 }, { unique: true });
 export const Certificate = mongoose.model('Certificate', certificateSchema);
+
+/** Filter for certificates that count as valid (records without a status predate it and are issued). */
+export const ISSUED = { status: { $nin: ['pending', 'revoked'] } };

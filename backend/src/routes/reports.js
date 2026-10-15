@@ -3,27 +3,41 @@
  * teams they lead.
  */
 import { Router } from 'express';
-import { Course, Quiz, Question, QuizAttempt, Enrolment, Certificate, User } from '../models/index.js';
-import { requireAuth, requireRole, visibleTeamIds } from '../middleware/auth.js';
+import { Course, Quiz, Question, QuizAttempt, Enrolment, Certificate, User, ISSUED } from '../models/index.js';
+import { requireAuth, requireRole, visibleScope, canSeePerson } from '../middleware/auth.js';
 import { progressMap, progressOf, courseTotals, totalFor } from '../services/progress.js';
-import { scopedUserIds, scopedEnrolments, summary, teamOptions, avg } from '../services/reports.js';
+import { scopedUserIds, scopedEnrolments, summary, teamOptions, departmentOptions, avg } from '../services/reports.js';
 import { today, csvDateTime } from '../utils/dates.js';
 import { toCsv } from '../utils/csv.js';
 import { fail, findOr404, isId, toId, str } from '../utils/http.js';
 
 const router = Router();
-router.use(requireAuth, requireRole('admin', 'trainer', 'team_lead'));
+router.use(requireAuth, requireRole('admin', 'trainer', 'team_lead', 'department_head'));
 
-/** Team filter from ?team=, limited to what the viewer may see. Returns [teamIds|null, visible, team]. */
+/**
+ * Scope from ?team= or ?department=, limited to what the viewer may see.
+ * Returns { teamIds: scope for scopedUserIds, visible, team, department }.
+ * (The name "teamIds" is kept from the original code; it may now also hold departments.)
+ */
 async function teamFilter(req) {
-  const visible = await visibleTeamIds(req.user);
+  const visible = await visibleScope(req.user);
   const team = isId(str(req.query.team)) ? str(req.query.team) : null;
+  const department = isId(str(req.query.department)) ? str(req.query.department) : null;
   if (team) {
-    if (visible !== null && !visible.includes(team)) fail(403, 'You can only view reports for the teams you lead.');
-    return { teamIds: [team], visible, team };
+    if (visible !== null && !visible.teamIds.includes(team)) fail(403, 'You can only view reports for the teams you lead.');
+    return { teamIds: { teamIds: [team], departmentIds: [] }, visible, team, department: null };
   }
-  return { teamIds: visible, visible, team: null };
+  if (department) {
+    if (visible !== null && !visible.departmentIds.includes(department)) fail(403, 'You can only view reports for the departments assigned to you.');
+    return { teamIds: { teamIds: [], departmentIds: [department] }, visible, team: null, department };
+  }
+  return { teamIds: visible, visible, team: null, department: null };
 }
+
+const options = async (visible) => ({
+  teamOptions: await teamOptions(visible === null ? null : visible.teamIds),
+  departmentOptions: await departmentOptions(visible === null ? null : visible.departmentIds),
+});
 
 async function quizStats(quizId, userIds) {
   if (!userIds.length) return { attempts: 0, learners: 0, passed: 0, avg: null, passRate: 0 };
@@ -44,13 +58,14 @@ async function quizStats(quizId, userIds) {
 }
 
 router.get('/', async (req, res) => {
-  const { teamIds, visible, team } = await teamFilter(req);
+  const { teamIds, visible, team, department } = await teamFilter(req);
   const userIds = await scopedUserIds(teamIds);
   const [enrolments, progress] = await Promise.all([scopedEnrolments(userIds), progressMap(userIds)]);
   const t = today();
 
   const courses = {};
   const teams = {};
+  const departments = {};
   const learners = {};
   for (const e of enrolments) {
     const p = progressOf(progress, e.userId, e.courseId);
@@ -71,6 +86,14 @@ router.get('/', async (req, res) => {
     if (overdue) tm.overdue++;
     if (p.avgScore !== null) tm.scores.push(p.avgScore);
 
+    const dk = e.departmentId || '';
+    const dp = (departments[dk] ??= { _id: e.departmentId, name: e.departmentName || 'No department', people: new Set(), enrolled: 0, completed: 0, overdue: 0, scores: [] });
+    dp.people.add(e.userId);
+    dp.enrolled++;
+    if (e.completedAt) dp.completed++;
+    if (overdue) dp.overdue++;
+    if (p.avgScore !== null) dp.scores.push(p.avgScore);
+
     const l = (learners[e.userId] ??= { _id: e.userId, name: e.name, team: e.teamName, lastLoginAt: e.lastLoginAt, enrolled: 0, completed: 0, overdue: 0, pcts: [], scores: [] });
     l.enrolled++;
     if (e.completedAt) l.completed++;
@@ -85,6 +108,9 @@ router.get('/', async (req, res) => {
   const teamRows = Object.values(teams)
     .map(({ scores, people, ...x }) => ({ ...x, people: people.size, rate: x.enrolled ? Math.round((x.completed * 100) / x.enrolled) : 0, avgScore: avg(scores) }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  const departmentRows = Object.values(departments)
+    .map(({ scores, people, ...x }) => ({ ...x, people: people.size, rate: x.enrolled ? Math.round((x.completed * 100) / x.enrolled) : 0, avgScore: avg(scores) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const learnerRows = Object.values(learners)
     .map(({ pcts, scores, ...l }) => ({ ...l, progress: avg(pcts) ?? 0, avgScore: avg(scores) }))
     // Overdue first, then least progress
@@ -94,16 +120,19 @@ router.get('/', async (req, res) => {
     summary: await summary(teamIds),
     courses: courseRows,
     teams: teamRows,
+    departments: departmentRows,
     learners: learnerRows,
-    teamOptions: await teamOptions(visible),
+    ...(await options(visible)),
     team,
+    department,
     isTeamLead: req.user.role === 'team_lead',
+    isDepartmentHead: req.user.role === 'department_head',
   });
 });
 
 router.get('/courses/:id', async (req, res) => {
   const course = await findOr404(Course, req.params.id, 'This course does not exist.');
-  const { teamIds, visible, team } = await teamFilter(req);
+  const { teamIds, visible, team, department } = await teamFilter(req);
   const userIds = await scopedUserIds(teamIds);
   const enrolments = await scopedEnrolments(userIds, course._id);
   const ids = enrolments.map((e) => e.userId);
@@ -119,9 +148,11 @@ router.get('/courses/:id', async (req, res) => {
     totals: totalFor(totals, course._id),
     quizzes,
     enrolments: enrolments.map((e) => ({ ...e, p: progressOf(progress, e.userId, course._id), overdue: !e.completedAt && !!e.dueDate && e.dueDate < t })),
-    teamOptions: await teamOptions(visible),
+    ...(await options(visible)),
     team,
+    department,
     isTeamLead: req.user.role === 'team_lead',
+    isDepartmentHead: req.user.role === 'department_head',
   });
 });
 
@@ -158,11 +189,10 @@ router.get('/quizzes/:id', async (req, res) => {
 });
 
 router.get('/users/:id', async (req, res) => {
-  const person = await User.findById(req.params.id).populate('team', 'name').lean().catch(() => null);
+  const person = await User.findById(req.params.id).populate('team', 'name').populate('department', 'name').lean().catch(() => null);
   if (!person) fail(404, 'This person does not exist.');
-  const visible = await visibleTeamIds(req.user);
-  if (visible !== null && !(person.team && visible.includes(String(person.team._id)))) {
-    fail(403, 'You can only view people in the teams you lead.');
+  if (!(await canSeePerson(req.user, person._id))) {
+    fail(403, req.user.role === 'department_head' ? 'You can only view students in your departments.' : 'You can only view people in the teams you lead.');
   }
   const rows = (await Enrolment.find({ user: person._id }).populate('course', 'title').lean()).filter((e) => e.course);
   rows.sort((a, b) => a.course.title.localeCompare(b.course.title));
@@ -172,13 +202,14 @@ router.get('/users/:id', async (req, res) => {
     .populate('quiz', 'title').populate('course', 'title').sort({ submittedAt: -1 }).lean())
     .filter((a) => a.quiz && a.course)
     .map((a) => ({ _id: a._id, quizTitle: a.quiz.title, courseTitle: a.course.title, percent: a.percent, passed: a.passed, submittedAt: a.submittedAt }));
-  const certificates = (await Certificate.find({ user: person._id }).populate('course', 'title').sort({ issuedAt: -1 }).lean())
+  const certificates = (await Certificate.find({ user: person._id, ...ISSUED }).populate('course', 'title').sort({ issuedAt: -1 }).lean())
     .filter((c) => c.course)
     .map((c) => ({ _id: c._id, code: c.code, issuedAt: c.issuedAt, title: c.course.title }));
   res.json({
     person: {
       _id: person._id, name: person.name, email: person.email, role: person.role, employeeId: person.employeeId,
-      lastLoginAt: person.lastLoginAt, teamName: person.team?.name || null, active: person.active,
+      lastLoginAt: person.lastLoginAt, teamName: person.team?.name || null, departmentName: person.department?.name || null, active: person.active,
+      registrationStatus: person.registration?.status || null,
     },
     enrolments: rows.map((e) => ({
       _id: e._id, courseId: e.course._id, title: e.course.title, dueDate: e.dueDate, enrolledAt: e.enrolledAt, completedAt: e.completedAt,

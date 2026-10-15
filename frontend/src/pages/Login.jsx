@@ -35,7 +35,7 @@ export default function Login() {
     <>
       <form onSubmit={submit} className="card auth-card">
         <h1>Sign in</h1>
-        <p className="muted">Use the work email and password your administrator gave you.</p>
+        <p className="muted">Use your email and password.</p>
         {error && <div className="flash flash-error" role="alert">{error}</div>}
         <label className="field">
           <span>Email</span>
@@ -46,9 +46,12 @@ export default function Login() {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
         <button className="btn btn-primary btn-block" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        <p className="muted small center">Forgot your password? Ask your team lead or administrator to reset it.</p>
+        <p className="muted small center">Forgot your password? Ask the registrar or your administrator to reset it.</p>
       </form>
-      <p className="center small"><Link to="/verify">Verify a certificate</Link></p>
+      <p className="center small">
+        {meta.registration?.allowSelfRegistration !== false && meta.installed && <><Link to="/register">New student? Register here</Link> · </>}
+        <Link to="/verify">Verify a certificate</Link>
+      </p>
     </>
   );
 }

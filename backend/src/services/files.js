@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import multer from 'multer';
-import { filesBucket } from '../db.js';
+import { Readable } from 'node:stream';
+import { filesBucket, getBucket } from '../db.js';
 import { config } from '../config.js';
 import { fail, toId } from '../utils/http.js';
 
@@ -63,8 +64,7 @@ export async function deleteStoredFile(id) {
 }
 
 /** Streams a stored file with HTTP Range support so videos can be seeked. */
-export async function sendStoredFile(req, res, file, download) {
-  const bucket = filesBucket();
+export async function sendStoredFile(req, res, file, download, bucket = filesBucket()) {
   const [info] = await bucket.find({ _id: toId(file.id) }).toArray();
   if (!info) fail(404, 'The file is missing on the server.');
   const size = info.length;
@@ -102,3 +102,76 @@ export async function sendStoredFile(req, res, file, download) {
     .on('error', () => res.destroy())
     .pipe(res);
 }
+
+// ---- images and documents (logos, signatures, student documents) -------------------
+
+/** Detects the real type of an uploaded buffer from its first bytes. */
+export function sniffType(buf) {
+  if (!buf || buf.length < 4) return null;
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'png';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg';
+  if (buf.slice(0, 5).toString('latin1') === '%PDF-') return 'pdf';
+  const head = buf.slice(0, 1024).toString('utf8').replace(/^﻿/, '').trimStart();
+  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head)) return 'svg';
+  return null;
+}
+
+/**
+ * Rejects SVG files that could run code or load outside resources. Logos are also served
+ * with a strict Content-Security-Policy and shown through <img>, which never runs scripts.
+ */
+export function checkSvg(buf) {
+  const text = buf.toString('utf8');
+  if (/<script|<foreignObject|<iframe|<embed|<object|\son[a-z]+\s*=|javascript:|data:text\/html|<!ENTITY/i.test(text)) {
+    fail(422, 'This SVG contains scripts or embedded content, which is not allowed. Export it again as a plain SVG or use PNG.');
+  }
+  if (/(?:xlink:)?href\s*=\s*["']\s*(?!#|data:image\/)/i.test(text)) {
+    fail(422, 'This SVG links to outside files. Use a self-contained SVG or a PNG instead.');
+  }
+}
+
+const MIME = { png: 'image/png', jpg: 'image/jpeg', pdf: 'application/pdf', svg: 'image/svg+xml' };
+
+/**
+ * Validates an in-memory upload: extension, real content and size.
+ * `allowed` is a list such as ['png', 'jpg', 'svg']. Returns the detected type.
+ */
+export function checkBufferUpload(file, allowed, maxMb, what = 'file') {
+  if (!file?.buffer?.length) fail(422, `The ${what} is empty.`);
+  if (file.size > maxMb * 1024 * 1024) fail(422, `The ${what} is larger than ${maxMb} MB.`);
+  const ext = extOf(file.originalname).replace('jpeg', 'jpg');
+  const kind = sniffType(file.buffer);
+  const label = allowed.map((a) => a.toUpperCase()).join(', ');
+  if (!kind || !allowed.includes(kind) || (ext && ext !== kind)) {
+    fail(422, `The ${what} must be a real ${label} file${ext && kind && ext !== kind ? ' (its content does not match its extension)' : ''}.`);
+  }
+  if (kind === 'svg') checkSvg(file.buffer);
+  return kind;
+}
+
+/** Saves an in-memory upload into a GridFS bucket. Returns { fileId, name, contentType, size, uploadedAt }. */
+export async function storeBuffer(bucketName, file, kind) {
+  const name = path.basename(String(file.originalname || `upload.${kind}`)).replace(/[^\w.\- ()]+/g, '_').slice(0, 150);
+  const contentType = MIME[kind] || 'application/octet-stream';
+  const stream = getBucket(bucketName).openUploadStream(name, { metadata: { contentType } });
+  await new Promise((resolve, reject) => {
+    Readable.from(file.buffer).on('error', reject).pipe(stream).on('error', reject).on('finish', resolve);
+  });
+  return { fileId: stream.id, name, contentType, size: file.size, uploadedAt: new Date() };
+}
+
+export async function deleteBucketFile(bucketName, id) {
+  if (!id) return;
+  try {
+    await getBucket(bucketName).delete(toId(id));
+  } catch {
+    /* already gone */
+  }
+}
+
+/** Small image/document uploads kept in memory (logos, signatures, registration documents). */
+export const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+export const registrationUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 6, fields: 60 },
+}).fields([{ name: 'photo', maxCount: 1 }, { name: 'documents', maxCount: 5 }]);

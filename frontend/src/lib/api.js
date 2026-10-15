@@ -40,6 +40,38 @@ export const onApiError = (fn) => {
 /** Absolute URL for an API path such as a lesson file link returned by the API. */
 export const apiUrl = (path) => (path ? `${API_URL}${path}` : null);
 
+/**
+ * Opens a protected file (e.g. a student's document) in a new tab. The file is fetched with
+ * the sign-in token, so no secret ever appears in a URL.
+ */
+export async function openProtectedFile(path, { download: save = false, name = 'document' } = {}) {
+  const win = save ? null : window.open('', '_blank');
+  try {
+    const res = await request('GET', path, undefined, { raw: true });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (win) win.location.href = url;
+    else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    if (win) win.close();
+    throw e;
+  }
+}
+
+/** Object URL for a protected image (e.g. a student's photo). Remember to revoke it. */
+export async function protectedImageUrl(path) {
+  const res = await request('GET', path, undefined, { raw: true });
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function request(method, path, data, { raw = false } = {}) {
   const headers = {};
   const token = getToken();

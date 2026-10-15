@@ -1,13 +1,22 @@
-import { User, Team, Enrolment, Certificate } from '../models/index.js';
+import { User, Team, Department, Enrolment, Certificate, ISSUED } from '../models/index.js';
 import { progressMap, progressOf } from './progress.js';
 import { today } from '../utils/dates.js';
 import { toId } from '../utils/http.js';
 
-/** Active user ids (strings) in scope. teamIds null = everyone. */
-export async function scopedUserIds(teamIds) {
-  if (teamIds === null) return (await User.find({ active: true }, '_id').lean()).map((u) => String(u._id));
-  if (!teamIds.length) return [];
-  return (await User.find({ active: true, team: { $in: teamIds.map(toId) } }, '_id').lean()).map((u) => String(u._id));
+/**
+ * Active user ids (strings) in scope.
+ * scope: null = everyone; an array = team ids (original behaviour);
+ * { teamIds, departmentIds } = people in any of those teams or departments.
+ */
+export async function scopedUserIds(scope) {
+  if (scope === null || scope === undefined) return (await User.find({ active: true }, '_id').lean()).map((u) => String(u._id));
+  const teamIds = Array.isArray(scope) ? scope : scope.teamIds || [];
+  const departmentIds = Array.isArray(scope) ? [] : scope.departmentIds || [];
+  const or = [];
+  if (teamIds.length) or.push({ team: { $in: teamIds.map(toId) } });
+  if (departmentIds.length) or.push({ department: { $in: departmentIds.map(toId) } });
+  if (!or.length) return [];
+  return (await User.find({ active: true, $or: or }, '_id').lean()).map((u) => String(u._id));
 }
 
 /** Enrolments of the given people, flattened with course, person and team details. */
@@ -17,7 +26,7 @@ export async function scopedEnrolments(userIds, courseId = null) {
   if (courseId) filter.course = courseId;
   const rows = await Enrolment.find(filter)
     .populate('course', 'title status')
-    .populate({ path: 'user', select: 'name email employeeId team lastLoginAt', populate: { path: 'team', select: 'name' } })
+    .populate({ path: 'user', select: 'name email employeeId team department lastLoginAt', populate: [{ path: 'team', select: 'name' }, { path: 'department', select: 'name' }] })
     .lean();
   return rows
     .filter((e) => e.course && e.user)
@@ -32,6 +41,8 @@ export async function scopedEnrolments(userIds, courseId = null) {
       employeeId: e.user.employeeId,
       teamId: e.user.team ? String(e.user.team._id) : null,
       teamName: e.user.team?.name || null,
+      departmentId: e.user.department ? String(e.user.department._id) : null,
+      departmentName: e.user.department?.name || null,
       lastLoginAt: e.user.lastLoginAt,
       dueDate: e.dueDate,
       enrolledAt: e.enrolledAt,
@@ -58,7 +69,7 @@ export async function summary(teamIds) {
     const s = progressOf(progress, e.userId, e.courseId).avgScore;
     if (s !== null) scores.push(s);
   }
-  const certificates = userIds.length ? await Certificate.countDocuments({ user: { $in: userIds.map(toId) } }) : 0;
+  const certificates = userIds.length ? await Certificate.countDocuments({ user: { $in: userIds.map(toId) }, ...ISSUED }) : 0;
   const total = enrolments.length;
   return {
     learners: learners.size,
@@ -76,6 +87,13 @@ export async function teamOptions(visible) {
   if (visible === null) return Team.find({}, 'name').sort({ name: 1 }).lean();
   if (!visible.length) return [];
   return Team.find({ _id: { $in: visible.map(toId) } }, 'name').sort({ name: 1 }).lean();
+}
+
+/** Departments the viewer may filter reports by. */
+export async function departmentOptions(visible) {
+  if (visible === null) return Department.find({}, 'name').sort({ name: 1 }).lean();
+  if (!visible.length) return [];
+  return Department.find({ _id: { $in: visible.map(toId) } }, 'name').sort({ name: 1 }).lean();
 }
 
 export { avg };

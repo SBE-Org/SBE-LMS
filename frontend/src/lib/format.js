@@ -1,9 +1,38 @@
+/** Role labels. The learner role keeps its original key ("agent") and is shown as Student. */
 export const ROLES = {
-  admin: 'Administrator',
+  admin: 'System Administrator',
+  department_head: 'Department Head',
+  registrar: 'Registrar',
   trainer: 'Trainer',
   team_lead: 'Team Lead',
-  agent: 'Agent',
+  agent: 'Student',
 };
+
+/** Registration approval status → [label, badge tone]. */
+export const REG_STATUS = {
+  pending: ['Pending review', 'warning'],
+  correction_requested: ['Correction requested', 'info'],
+  approved: ['Approved', 'success'],
+  rejected: ['Rejected', 'danger'],
+};
+
+export const ACCOUNT_STATUS = {
+  active: ['Active', 'success'],
+  suspended: ['Suspended', 'warning'],
+  deactivated: ['Deactivated', 'neutral'],
+};
+
+export const SOURCE_LABELS = { self: 'Self-registered', registrar: 'Registrar', admin: 'Administrator', import: 'CSV import', legacy: 'Existing account' };
+
+/** "registration.approved" → "Registration approved" */
+export const actionLabel = (a) => capitalize(String(a || '').replace(/[._]/g, ' '));
+
+export function fmtBytes(n) {
+  if (!n && n !== 0) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

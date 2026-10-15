@@ -93,12 +93,19 @@ function newCertificateCode() {
   return `SHG-${year}-${crypto.randomBytes(6).toString('hex').slice(0, 10).toUpperCase()}`;
 }
 
-export async function issueCertificate(userId, courseId) {
+/**
+ * Creates the learner's certificate for a course (never a second one).
+ * With `pending`, it waits for the issuing authority (Department Head / administrator) to authorise it.
+ */
+export async function issueCertificate(userId, courseId, { pending = false, completedAt = new Date() } = {}) {
   const existing = await Certificate.findOne({ user: userId, course: courseId });
   if (existing) return existing.code;
   for (let i = 0; i < 5; i++) {
     try {
-      const c = await Certificate.create({ user: userId, course: courseId, code: newCertificateCode() });
+      const c = await Certificate.create({
+        user: userId, course: courseId, code: newCertificateCode(), status: pending ? 'pending' : 'issued', completedAt,
+      });
+      if (pending) await announcePendingCertificate(c);
       return c.code;
     } catch (e) {
       if (e?.code !== 11000) throw e;
@@ -120,12 +127,31 @@ export async function checkCompletion(userId, courseId) {
   if (complete && !enrol.completedAt) {
     const updated = await Enrolment.findOneAndUpdate({ _id: enrol._id, completedAt: null }, { completedAt: new Date() });
     if (updated) {
-      const course = await Course.findById(courseId, 'certificateEnabled');
-      if (course?.certificateEnabled) await issueCertificate(userId, courseId);
+      const course = await Course.findById(courseId, 'certificateEnabled certificateRequiresApproval');
+      if (course?.certificateEnabled) {
+        await issueCertificate(userId, courseId, { pending: !!course.certificateRequiresApproval, completedAt: updated.completedAt || new Date() });
+      }
     }
     return true;
   }
   return complete;
+}
+
+/** Tells the people who can authorise it that a certificate is waiting. */
+async function announcePendingCertificate(cert) {
+  const [course, learner] = await Promise.all([
+    Course.findById(cert.course, 'title department').lean(),
+    User.findById(cert.user, 'name').lean(),
+  ]);
+  const { notifyDepartmentHeads, notify } = await import('./notify.js');
+  const message = {
+    type: 'certificate',
+    title: 'Certificate waiting for authorisation',
+    body: `${learner?.name || 'A learner'} completed “${course?.title || 'a course'}”.`,
+    link: '/manage/certificates',
+  };
+  if (course?.department) await notifyDepartmentHeads(course.department, message);
+  else await notify((await User.find({ role: 'admin', active: true }, '_id').lean()).map((u) => u._id), message);
 }
 
 /** Enrols a user if not already enrolled. Returns true if a new enrolment was created. */

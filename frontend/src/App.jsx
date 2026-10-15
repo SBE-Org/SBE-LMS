@@ -5,6 +5,16 @@ import AuthLayout from './components/AuthLayout.jsx';
 import { ErrorPage, Loading } from './components/ui.jsx';
 
 import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import MyRegistration from './pages/MyRegistration.jsx';
+import Applications from './pages/registrations/Applications.jsx';
+import Application from './pages/registrations/Application.jsx';
+import StudentForm from './pages/registrations/StudentForm.jsx';
+import Departments from './pages/admin/Departments.jsx';
+import DepartmentForm from './pages/admin/DepartmentForm.jsx';
+import SettingsPage from './pages/admin/Settings.jsx';
+import Audit from './pages/admin/Audit.jsx';
+import CertificateApprovals from './pages/manage/CertificateApprovals.jsx';
 import Install from './pages/Install.jsx';
 import Verify from './pages/Verify.jsx';
 import Password from './pages/Password.jsx';
@@ -55,9 +65,20 @@ function RequireRole({ roles, children }) {
   return children;
 }
 
-const staff = (el) => <RequireRole roles={['admin', 'trainer']}>{el}</RequireRole>;
+// These only hide pages; every rule is enforced again by the API.
+const staff = (el) => <RequireRole roles={['admin', 'trainer', 'department_head']}>{el}</RequireRole>;
 const admin = (el) => <RequireRole roles={['admin']}>{el}</RequireRole>;
-const tracker = (el) => <RequireRole roles={['admin', 'trainer', 'team_lead']}>{el}</RequireRole>;
+const tracker = (el) => <RequireRole roles={['admin', 'trainer', 'team_lead', 'department_head']}>{el}</RequireRole>;
+const admissions = (el) => <RequireRole roles={['admin', 'registrar', 'department_head']}>{el}</RequireRole>;
+const registrar = (el) => <RequireRole roles={['admin', 'registrar']}>{el}</RequireRole>;
+const student = (el) => <RequireRole roles={['agent']}>{el}</RequireRole>;
+function RequireCertificateAuthority({ children }) {
+  const { user } = useAuth();
+  if (!hasRole(user, 'admin', 'department_head') && !user?.permissions?.authorizeCertificates) {
+    return <ErrorPage status={403} message="You do not have permission to open this page." />;
+  }
+  return children;
+}
 
 export default function App() {
   const { ready, meta, metaError, user } = useAuth();
@@ -76,6 +97,7 @@ export default function App() {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
         <Route path="/install" element={<Install />} />
         <Route path="/verify" element={<Verify />} />
       </Route>
@@ -92,6 +114,13 @@ export default function App() {
         <Route path="/attempts/:id" element={<QuizTake />} />
         <Route path="/attempts/:id/result" element={<QuizResult />} />
         <Route path="/certificates" element={<Certificates />} />
+        <Route path="/registration" element={student(<MyRegistration />)} />
+
+        <Route path="/registrations" element={admissions(<Applications />)} />
+        <Route path="/registrations/new" element={registrar(<StudentForm />)} />
+        <Route path="/registrations/:id" element={admissions(<Application />)} />
+        <Route path="/registrations/:id/edit" element={registrar(<StudentForm />)} />
+        <Route path="/manage/certificates" element={<RequireCertificateAuthority><CertificateApprovals /></RequireCertificateAuthority>} />
 
         <Route path="/manage/courses" element={staff(<ManageCourses />)} />
         <Route path="/manage/courses/new" element={staff(<CourseForm />)} />
@@ -113,6 +142,11 @@ export default function App() {
         <Route path="/admin/teams" element={admin(<Teams />)} />
         <Route path="/admin/teams/new" element={admin(<TeamForm />)} />
         <Route path="/admin/teams/:id/edit" element={admin(<TeamForm />)} />
+        <Route path="/admin/departments" element={admin(<Departments />)} />
+        <Route path="/admin/departments/new" element={admin(<DepartmentForm />)} />
+        <Route path="/admin/departments/:id/edit" element={admin(<DepartmentForm />)} />
+        <Route path="/admin/settings" element={admin(<SettingsPage />)} />
+        <Route path="/admin/audit" element={admin(<Audit />)} />
 
         <Route path="/reports" element={tracker(<ReportsOverview />)} />
         <Route path="/reports/courses/:id" element={tracker(<CourseReport />)} />

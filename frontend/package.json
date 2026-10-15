@@ -1,6 +1,6 @@
 {
   "name": "shaggar-lms-frontend",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Shaggar BPO Academy — web app (React + Vite)",
   "private": true,
   "type": "module",

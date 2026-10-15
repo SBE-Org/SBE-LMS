@@ -36,7 +36,7 @@ async function main() {
   console.log(`Administrator created: ${email}`);
   if (args.demo) {
     await seedDemo(admin._id);
-    console.log('Demo data loaded. Demo accounts use the password Welcome@123 (e.g. trainer@shaggar.test, hana.tesfaye@shaggar.test, abebe.kebede@shaggar.test).');
+    console.log('Demo data loaded. Demo accounts use the password Welcome@123 (e.g. trainer@shaggar.test, head.cs@shaggar.test, registrar@shaggar.test, hana.tesfaye@shaggar.test, abebe.kebede@shaggar.test).');
   }
   console.log('Done.');
 }

@@ -40,7 +40,7 @@ export default function ManageCourses() {
                 <tbody>
                   {courses.map((c) => (
                     <tr key={c._id}>
-                      <td><Link to={`/manage/courses/${c._id}`}><strong>{c.title}</strong></Link><br /><small className="muted">{c.category || 'General'}</small></td>
+                      <td><Link to={`/manage/courses/${c._id}`}><strong>{c.title}</strong></Link><br /><small className="muted">{c.category || 'General'} · {c.departmentName || 'Institution-wide'}</small></td>
                       <td><Badge tone={STATUS_TONE[c.status]}>{capitalize(c.status)}</Badge></td>
                       <td className="small">{plural(c.lessonCount, 'lesson')}, {plural(c.quizCount, 'quiz', 'quizzes')}</td>
                       <td className="small">{c.enrolled} enrolled<br /><span className="muted">{c.completed} completed</span></td>

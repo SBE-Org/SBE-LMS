@@ -44,13 +44,18 @@ export default function Verify() {
             <Icon name="check" className="icon icon-lg" />
             <div>
               <strong>Valid certificate</strong>
-              <p>{result.certificate.learnerName} completed <strong>{result.certificate.courseTitle}</strong> on {fmtDateLong(result.certificate.issuedAt)}.</p>
+              <p>{result.certificate.learnerName} completed <strong>{result.certificate.courseTitle}</strong>{result.certificate.departmentName ? ` (${result.certificate.departmentName})` : ''}; issued {fmtDateLong(result.certificate.issuedAt)}.</p>
             </div>
+          </div>
+        ) : result.revoked ? (
+          <div className="verify-result bad">
+            <Icon name="alert" className="icon icon-lg" />
+            <div><strong>Revoked</strong><p>This certificate was issued by {meta.company} but has been revoked and is no longer valid.</p></div>
           </div>
         ) : (
           <div className="verify-result bad">
             <Icon name="alert" className="icon icon-lg" />
-            <div><strong>Not found</strong><p>No certificate with this number was issued by {meta.company}.</p></div>
+            <div><strong>Not found</strong><p>No valid certificate with this number was issued by {meta.company}.</p></div>
           </div>
         ))}
       </div>

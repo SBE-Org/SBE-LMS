@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
-import { User, Team } from '../models/index.js';
+import { User, Team, STUDENT_ROLE } from '../models/index.js';
 import { fail } from '../utils/http.js';
 
 export function signToken(user) {
@@ -21,9 +21,13 @@ export function verifyFileToken(token, lessonId) {
   }
 }
 
-/** Loads the active user for an id, with team name. */
+/** Loads the active user for an id, with team and department names. */
 export async function loadUser(id) {
-  const u = await User.findOne({ _id: id, active: true }).select('+tokenVersion').populate('team', 'name').lean();
+  const u = await User.findOne({ _id: id, active: true })
+    .select('+tokenVersion')
+    .populate('team', 'name')
+    .populate('department', 'name code')
+    .lean();
   return u || null;
 }
 
@@ -35,8 +39,16 @@ export const publicUser = (u) => ({
   role: u.role,
   team: u.team?._id || u.team || null,
   teamName: u.team?.name || null,
+  department: u.department?._id || u.department || null,
+  departmentName: u.department?.name || null,
+  departments: (u.departments || []).map(String),
+  permissions: {
+    approveRegistrations: !!u.permissions?.approveRegistrations,
+    authorizeCertificates: !!u.permissions?.authorizeCertificates,
+  },
   employeeId: u.employeeId || null,
   mustChangePassword: !!u.mustChangePassword,
+  registrationStatus: u.role === STUDENT_ROLE ? u.registration?.status || null : null,
 });
 
 /**
@@ -81,9 +93,102 @@ export async function visibleTeamIds(user) {
   return [];
 }
 
-/** True if `viewer` may see records of the person with id `ownerId`. */
+// ---- departments and scoping --------------------------------------------------
+
+/** Department ids (strings) assigned to a Department Head or Registrar. */
+export const assignedDepartmentIds = (user) => (user?.departments || []).map((d) => String(d._id ?? d));
+
+export const isStudent = (user) => hasRole(user, STUDENT_ROLE);
+
+/**
+ * Departments whose registration records the user may see.
+ * null = all departments; [] = none.
+ */
+export function registrationScope(user) {
+  if (hasRole(user, 'admin')) return null;
+  if (hasRole(user, 'registrar')) {
+    const d = assignedDepartmentIds(user);
+    return d.length ? d : null; // a registrar with no departments assigned works institution-wide
+  }
+  if (hasRole(user, 'department_head')) return assignedDepartmentIds(user);
+  return [];
+}
+
+/**
+ * Departments in which the user may approve/reject registrations.
+ * Department Heads: their departments. Registrars: only when an administrator granted the permission.
+ * Administrators can decide anywhere, but only as a recorded override (see services/registration.js).
+ */
+export function reviewScope(user) {
+  if (hasRole(user, 'department_head')) return assignedDepartmentIds(user);
+  if (hasRole(user, 'registrar') && user.permissions?.approveRegistrations) return registrationScope(user);
+  if (hasRole(user, 'admin')) return null;
+  return [];
+}
+
+export const inScope = (scope, departmentId) => scope === null || (!!departmentId && scope.includes(String(departmentId._id ?? departmentId)));
+
+/** Departments whose courses the user may build. null = all (admin, trainer). */
+export function courseScope(user) {
+  if (hasRole(user, 'admin', 'trainer')) return null;
+  if (hasRole(user, 'department_head')) return assignedDepartmentIds(user);
+  return [];
+}
+
+/** True if the user may edit this course (and its modules, lessons, quizzes and enrolments). */
+export function canManageCourse(user, course) {
+  const scope = courseScope(user);
+  if (scope === null) return true;
+  return !!course?.department && scope.includes(String(course.department._id ?? course.department));
+}
+
+/** True if the user may authorise certificates for a course in this department. */
+export function canAuthorizeCertificates(user, departmentId) {
+  if (hasRole(user, 'admin')) return true;
+  if (hasRole(user, 'department_head')) return inScope(assignedDepartmentIds(user), departmentId);
+  if (user?.permissions?.authorizeCertificates) return hasRole(user, 'trainer') || inScope(registrationScope(user), departmentId);
+  return false;
+}
+
+/**
+ * Report scope: null (everyone), or { teamIds, departmentIds } — people in any of them are visible.
+ */
+export async function visibleScope(user) {
+  if (hasRole(user, 'admin', 'trainer')) return null;
+  if (hasRole(user, 'department_head')) return { teamIds: [], departmentIds: assignedDepartmentIds(user) };
+  if (hasRole(user, 'team_lead')) return { teamIds: await visibleTeamIds(user), departmentIds: [] };
+  return { teamIds: [], departmentIds: [] };
+}
+
+/**
+ * Why a learner may not use course content yet, or null when they may.
+ * Only students need an approved registration; staff are never blocked here.
+ */
+export function learningBlock(user) {
+  if (!isStudent(user)) return null;
+  const st = user.registration?.status;
+  if (st === 'approved') return null;
+  const messages = {
+    pending: 'Your registration is waiting for review by your department. You can start learning once it is approved.',
+    correction_requested: 'Your department asked you to correct your registration. Open “My registration” to see what is needed.',
+    rejected: 'Your registration was not approved, so course content is not available. Open “My registration” for the reason.',
+  };
+  return { status: st || 'pending', message: messages[st] || messages.pending };
+}
+
+/** Stops with 403 if the signed-in student is not approved yet. */
+export function assertCanLearn(user) {
+  const b = learningBlock(user);
+  if (b) fail(403, b.message, { code: 'REGISTRATION_NOT_APPROVED', registrationStatus: b.status });
+}
+
+/** True if `viewer` may see academic records (results, certificates) of the person with id `ownerId`. */
 export async function canSeePerson(viewer, ownerId) {
   if (String(viewer._id) === String(ownerId) || isStaff(viewer)) return true;
+  if (hasRole(viewer, 'department_head')) {
+    const owner = await User.findById(ownerId, 'department').lean();
+    return !!owner?.department && assignedDepartmentIds(viewer).includes(String(owner.department));
+  }
   if (!hasRole(viewer, 'team_lead')) return false;
   const owner = await User.findById(ownerId, 'team').lean();
   const visible = await visibleTeamIds(viewer);

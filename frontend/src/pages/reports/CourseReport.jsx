@@ -1,11 +1,11 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { qs } from '../../lib/api.js';
-import { useAuth, isStaff } from '../../lib/auth.jsx';
+import { useAuth, canBuild } from '../../lib/auth.jsx';
 import { useApi, useTitle } from '../../lib/useApi.js';
 import { fmtDate } from '../../lib/format.js';
 import Icon from '../../components/Icon.jsx';
 import { Crumbs, EnrolmentBadge, Guard, ProgressBar } from '../../components/ui.jsx';
-import { TeamFilter } from './Overview.jsx';
+import { TeamFilter, PrintHeader, PrintButton } from './Overview.jsx';
 
 export default function CourseReport() {
   const { id } = useParams();
@@ -22,10 +22,14 @@ export default function CourseReport() {
         const overdue = enrolments.filter((e) => e.overdue).length;
         return (
           <>
+            <PrintHeader title={`Course report · ${course.title}`} />
             <Crumbs items={[['Reports', `/reports${qs({ team })}`], [course.title]]} />
             <div className="page-head">
               <div><h1>{course.title}</h1><p className="muted">{totals.lessons} lessons · {totals.quizzes} quizzes</p></div>
-              {isStaff(user) && <Link className="btn btn-ghost" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Manage enrolments</Link>}
+              <div className="actions no-print">
+                <PrintButton />
+                {canBuild(user) && <Link className="btn btn-ghost" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Manage enrolments</Link>}
+              </div>
             </div>
             <TeamFilter options={teamOptions} team={team} isTeamLead={isTeamLead} onChange={(v) => setParams(v ? { team: v } : {})} />
             <div className="stats">

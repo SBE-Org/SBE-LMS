@@ -8,8 +8,10 @@ A training platform (LMS) for Shaggar BPO Enterprise. People take courses and qu
 | Backend (API) | Node.js 18+, Express 5, Mongoose 8 | `backend/` | Render, Railway, a VPS… |
 | Frontend | React 18 + Vite, React Router | `frontend/` | Vercel |
 
-Everything from the PHP version is here:
-- **Roles:** agent, team lead, trainer and admin.
+Everything from the PHP version is here, plus (v2.1) departments, controlled student registration and branding — see **CHANGES.md** for the full list:
+- **Roles:** System Administrator, Department Head, Registrar, Trainer, Team Lead and Student (stored as `agent`, so existing accounts keep working).
+- **Registration & approval:** self-registration or registrar-created accounts on one standard form; applications stay *pending* until the Department Head approves, rejects or asks for a correction. Unapproved students cannot open course content, even through direct URLs or the API. Every decision is audited and notified.
+- **Branding:** administrators upload the logo (PNG/JPG/SVG), choose where it appears (11 locations, each with size and alignment), set colours, certificate layout, signatories and seal — with a live preview, no redeploy.
 - **Courses:** modules with reading, video and file lessons.
 - **Quizzes:** single-answer, multiple-answer and true/false questions, with a time limit, an attempt limit, shuffling and answer review.
 - **Completion:** automatic completion and certificates you can download as a PDF or print, plus a public page to verify a certificate.
@@ -44,7 +46,7 @@ npm install
 npm run dev                 # app on http://localhost:5173
 ```
 
-Open http://localhost:5173. On a fresh database the **installer** appears: create the first administrator. You can also tick *Load demo data*, which adds 3 teams, 16 people and 4 BPO courses. All demo accounts use the password `Welcome@123`, for example `trainer@shaggar.test`, `hana.tesfaye@shaggar.test` and `abebe.kebede@shaggar.test`.
+Open http://localhost:5173. On a fresh database the **installer** appears: create the first administrator. You can also tick *Load demo data*, which adds 3 departments, 3 teams, 22 people (including 3 applications waiting for review) and 4 BPO courses. All demo accounts use the password `Welcome@123`, for example `trainer@shaggar.test`, `head.cs@shaggar.test` (Department Head), `registrar@shaggar.test`, `hana.tesfaye@shaggar.test` (team lead) and `abebe.kebede@shaggar.test` (student).
 
 You can also do the install from the command line instead of the browser:
 
@@ -162,7 +164,18 @@ Uploads (PDF, Word, PowerPoint, Excel, MP4, MP3, images) are stored **inside Mon
 
 ---
 
-## 5. Tests
+## 5. Database migrations
+
+Existing databases are upgraded automatically when the API starts (and by `npm run seed`). The step is additive and idempotent: existing students are recorded as *approved (legacy)* so nobody loses access, existing certificates are marked *issued*, account status mirrors the old active flag, and a settings document is created. Nothing is deleted.
+
+```bash
+cd backend
+npm run migrate          # apply pending migrations by hand
+npm run migrate:status   # list applied migrations
+npm run migrate:down     # roll back the latest one (take a mongodump backup first)
+```
+
+## 6. Tests
 
 With a MongoDB available:
 
@@ -171,8 +184,8 @@ cd backend
 npm test
 ```
 
-The test suite creates a temporary database (your `MONGODB_URI` name + `_test`, or `MONGODB_TEST_URI`), installs the demo data and starts the API. It then runs about 90 end-to-end checks across every role: learning, quizzes, certificates, course building, uploads, enrolment, reports, CSV import and export, permissions and rate limiting. The database is dropped at the end.
+The test suite creates a temporary database (your `MONGODB_URI` name + `_test`, or `MONGODB_TEST_URI`), installs the demo data and starts the API. It then runs about 190 end-to-end checks across every role: learning, quizzes, certificates, course building, uploads, enrolment, reports, CSV import and export, permissions and rate limiting, plus registration and approval, department scoping, registrar limits, administrator overrides, certificate authorisation, logo upload and placements, the audit log, account suspension and the migration. The database is dropped at the end.
 
-## 6. Backups
+## 7. Backups
 - **Atlas:** turn on backups in the cluster settings.
-- **Self-hosted:** `mongodump --uri="$MONGODB_URI" --out=backup-$(date +%F)`. Lesson files are in the `lessonFiles.*` collections, so they're included.
+- **Self-hosted:** `mongodump --uri="$MONGODB_URI" --out=backup-$(date +%F)`. Lesson files are in the `lessonFiles.*` collections, logos and signatures in `brandingFiles.*`, and student documents in `registrationFiles.*`, so they're all included.

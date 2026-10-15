@@ -3,7 +3,8 @@ import { useAuth, hasRole } from '../../lib/auth.jsx';
 import { useApi, useTitle } from '../../lib/useApi.js';
 import { fmtDate, fmtDateTime, initials, ROLES } from '../../lib/format.js';
 import Icon from '../../components/Icon.jsx';
-import { Crumbs, EnrolmentBadge, Guard, ProgressBar } from '../../components/ui.jsx';
+import { Crumbs, EnrolmentBadge, Guard, ProgressBar, RegistrationBadge } from '../../components/ui.jsx';
+import { PrintHeader, PrintButton } from './Overview.jsx';
 
 export default function LearnerReport() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function LearnerReport() {
     <Guard state={state}>
       {({ person, enrolments, attempts, certificates }) => (
         <>
+          <PrintHeader title={`Learner report · ${person.name}`} />
           <Crumbs items={[['Reports', '/reports'], [person.name]]} />
           <div className="page-head">
             <div className="person person-lg">
@@ -22,10 +24,12 @@ export default function LearnerReport() {
               <div>
                 <h1>{person.name}</h1>
                 <p className="muted">
-                  {ROLES[person.role] || person.role} · {person.teamName || 'No team'}{person.employeeId ? ` · ${person.employeeId}` : ''} · last sign-in {person.lastLoginAt ? fmtDateTime(person.lastLoginAt) : 'never'}
+                  {ROLES[person.role] || person.role}{person.departmentName ? ` · ${person.departmentName}` : ''} · {person.teamName || 'No team'}{person.employeeId ? ` · ${person.employeeId}` : ''} · last sign-in {person.lastLoginAt ? fmtDateTime(person.lastLoginAt) : 'never'}
                 </p>
+                {person.registrationStatus && <p><RegistrationBadge status={person.registrationStatus} /></p>}
               </div>
             </div>
+            <PrintButton />
             {hasRole(user, 'admin') && <Link className="btn btn-ghost" to={`/admin/users/${person._id}/edit`}><Icon name="edit" />Edit person</Link>}
           </div>
 

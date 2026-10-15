@@ -1,7 +1,7 @@
 {
   "name": "shaggar-lms-backend",
-  "version": "2.0.0",
-  "description": "Shaggar BPO Academy — REST API (Node.js, Express, MongoDB)",
+  "version": "2.1.0",
+  "description": "Shaggar BPO Academy \u2014 REST API (Node.js, Express, MongoDB)",
   "type": "module",
   "main": "src/server.js",
   "private": true,
@@ -12,7 +12,10 @@
     "start": "node src/server.js",
     "dev": "nodemon --watch src src/server.js",
     "seed": "node src/seed/seed.js",
-    "test": "node tests/api.test.js"
+    "test": "node tests/api.test.js",
+    "migrate": "node src/migrations/cli.js up",
+    "migrate:status": "node src/migrations/cli.js status",
+    "migrate:down": "node src/migrations/cli.js down"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
