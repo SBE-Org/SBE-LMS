@@ -94,7 +94,7 @@ const userSchema = new mongoose.Schema(
     /** Student registration application. null status = not a student application (staff). */
     registration: {
       status: { type: String, enum: [...REGISTRATION_STATUSES, null], default: null, index: true },
-      source: { type: String, enum: ['self', 'registrar', 'admin', 'import', 'legacy', null], default: null },
+      source: { type: String, enum: ['self', 'registrar', 'admin', 'import', 'legacy', 'talent_pool', null], default: null },
       submittedAt: { type: Date, default: null },
       createdBy: { type: ObjectId, ref: 'User', default: null },
       reviewedBy: { type: ObjectId, ref: 'User', default: null },

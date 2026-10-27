@@ -23,6 +23,7 @@ import reportRoutes from './routes/reports.js';
 import registrationRoutes from './routes/registrations.js';
 import settingsRoutes from './routes/settings.js';
 import notificationRoutes from './routes/notifications.js';
+import integrationRoutes from './routes/integration.js';
 
 export function createApp() {
   const app = express();
@@ -74,6 +75,7 @@ export function createApp() {
   app.use('/api/admin', adminRoutes);
   app.use('/api/reports', reportRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/integration', integrationRoutes); // the Talent Pool (server to server)
   app.use('/api', registrationRoutes); // /registration/me, /registrations
   app.use('/api', settingsRoutes); // /branding/files, /admin/settings
 

@@ -459,7 +459,7 @@ export function registrationFilter(user, q = {}) {
     if (scope !== null && !scope.includes(q.department)) fail(403, 'You can only view the departments assigned to you.');
     filter.department = toId(q.department);
   }
-  if (q.source && ['self', 'registrar', 'admin', 'import', 'legacy'].includes(q.source)) filter['registration.source'] = q.source;
+  if (q.source && ['self', 'registrar', 'admin', 'import', 'legacy', 'talent_pool'].includes(q.source)) filter['registration.source'] = q.source;
   if (q.q) {
     const rx = new RegExp(escapeRegex(q.q), 'i');
     filter.$or = [{ name: rx }, { email: rx }, { employeeId: rx }, { phone: rx }];

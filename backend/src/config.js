@@ -19,6 +19,10 @@ export const config = {
   timezone: process.env.APP_TIMEZONE || 'Africa/Addis_Ababa',
   maxUploadMb: int(process.env.MAX_UPLOAD_MB, 200),
   loginMaxAttempts: int(process.env.LOGIN_MAX_ATTEMPTS, 5),
+  // Connection with the Shaggar BPO Talent Pool (optional). The same key is set on both sides.
+  integrationKey: (process.env.INTEGRATION_KEY || '').trim(),
+  talentPoolUrl: (process.env.TALENT_POOL_URL || '').trim().replace(/\/+$/, ''),
+  talentPoolDepartment: (process.env.TALENT_POOL_DEPARTMENT || '').trim(),
 };
 
 if (!config.jwtSecret || config.jwtSecret === 'change-me-to-a-long-random-string') {

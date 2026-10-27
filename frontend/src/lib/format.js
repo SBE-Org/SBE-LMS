@@ -22,7 +22,7 @@ export const ACCOUNT_STATUS = {
   deactivated: ['Deactivated', 'neutral'],
 };
 
-export const SOURCE_LABELS = { self: 'Self-registered', registrar: 'Registrar', admin: 'Administrator', import: 'CSV import', legacy: 'Existing account' };
+export const SOURCE_LABELS = { self: 'Self-registered', registrar: 'Registrar', admin: 'Administrator', import: 'CSV import', legacy: 'Existing account', talent_pool: 'Talent Pool' };
 
 /** "registration.approved" → "Registration approved" */
 export const actionLabel = (a) => capitalize(String(a || '').replace(/[._]/g, ' '));

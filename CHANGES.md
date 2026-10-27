@@ -107,3 +107,8 @@ Then, signed in as an administrator:
 3. **Branding & settings** → upload the logo, choose placements, colours, certificate signatories/seal and the registration fields.
 4. Assign existing courses to departments where relevant, and switch on *Certificates need authorisation* where your institution requires it.
 5. Existing students without a department can be given one on the People page.
+
+## Talent Pool connection
+- New `/api/integration` API for the Shaggar BPO Talent Pool (list published courses, enrol by email creating an approved student with a temporary password, training status, new temporary password).
+- Enrolments made by the Talent Pool are marked (`via: talent_pool`); lesson/quiz progress, completion, certificate authorisation/revocation and a learner's first sign-in are reported back to the Talent Pool.
+- New registration source "Talent Pool". New settings: `INTEGRATION_KEY`, `TALENT_POOL_URL`, `TALENT_POOL_DEPARTMENT`.

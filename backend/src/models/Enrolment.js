@@ -9,6 +9,8 @@ const enrolmentSchema = new mongoose.Schema({
   dueDate: { type: String, default: null }, // YYYY-MM-DD in APP_TIMEZONE
   enrolledAt: { type: Date, default: Date.now },
   completedAt: { type: Date, default: null },
+  /** 'talent_pool' when the Talent Pool assigned it: progress on it is reported back there. */
+  via: { type: String, default: null },
 });
 enrolmentSchema.index({ user: 1, course: 1 }, { unique: true });
 export const Enrolment = mongoose.model('Enrolment', enrolmentSchema);

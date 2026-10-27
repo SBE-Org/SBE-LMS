@@ -189,3 +189,13 @@ The test suite creates a temporary database (your `MONGODB_URI` name + `_test`, 
 ## 7. Backups
 - **Atlas:** turn on backups in the cluster settings.
 - **Self-hosted:** `mongodump --uri="$MONGODB_URI" --out=backup-$(date +%F)`. Lesson files are in the `lessonFiles.*` collections, logos and signatures in `brandingFiles.*`, and student documents in `registrationFiles.*`, so they're all included.
+
+
+## Connection with the Shaggar BPO Talent Pool (optional)
+
+The Talent Pool can enrol approved talents in published courses here, and shows them as "Under training" until they finish.
+
+- Set `INTEGRATION_KEY` (the same long random key as on the Talent Pool server) and `TALENT_POOL_URL` (the Talent Pool API address). Optional: `TALENT_POOL_DEPARTMENT`, a department code for the new learners.
+- New learners are created as approved students (source "Talent Pool") with a temporary password they change at first sign-in. Existing accounts (same email) are simply enrolled.
+- Progress, completion, certificate approval/revocation and the first sign-in are reported back to the Talent Pool automatically.
+- API (server to server, header `X-Integration-Key`): `GET /api/integration/ping`, `GET /api/integration/courses`, `POST /api/integration/enrol`, `GET /api/integration/status?email=`, `POST /api/integration/new-password`. Without `INTEGRATION_KEY` these addresses do not exist.

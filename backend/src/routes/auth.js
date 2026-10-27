@@ -7,6 +7,7 @@ import { registrationUpload } from '../services/files.js';
 import { readRegistration, createStudent } from '../services/registration.js';
 import { getSettings } from '../services/settings.js';
 import { audit } from '../services/audit.js';
+import { notifyTalentPool } from '../services/integration.js';
 import { checkPassword, hashPassword } from '../utils/password.js';
 import { fail, invalid, str } from '../utils/http.js';
 
@@ -29,8 +30,10 @@ router.post('/login', async (req, res) => {
   if (!u.active) fail(403, 'Your account is deactivated. Please contact your administrator.');
 
   await LoginAttempt.deleteMany({ email });
+  const firstSignIn = !u.lastLoginAt;
   u.lastLoginAt = new Date();
   await u.save();
+  if (firstSignIn) notifyTalentPool(u._id); // the Talent Pool stops showing their temporary password
   await applyTeamCourses(u._id);
 
   const full = await loadUser(u._id);

@@ -11,6 +11,7 @@ import {
 } from '../models/index.js';
 import { toId } from '../utils/http.js';
 import { today, addDays } from '../utils/dates.js';
+import { notifyTalentPool } from './integration.js';
 
 const k = (id) => String(id);
 const oids = (ids) => ids.map((i) => toId(i));
@@ -132,8 +133,10 @@ export async function checkCompletion(userId, courseId) {
         await issueCertificate(userId, courseId, { pending: !!course.certificateRequiresApproval, completedAt: updated.completedAt || new Date() });
       }
     }
+    if (enrol.via) notifyTalentPool(userId);
     return true;
   }
+  if (enrol.via) notifyTalentPool(userId); // progress changed: the Talent Pool shows it
   return complete;
 }
 

@@ -6,6 +6,7 @@ import {
 import { getSettings, publicBranding } from '../services/settings.js';
 import { audit } from '../services/audit.js';
 import { notify } from '../services/notify.js';
+import { notifyTalentPool } from '../services/integration.js';
 import { fail, str, isId, toId } from '../utils/http.js';
 
 const router = Router();
@@ -144,6 +145,7 @@ router.post('/certificate-approvals/:id/authorize', requireAuth, async (req, res
   if (!updated) fail(409, 'This certificate is not waiting for authorisation (it may already be issued).');
   await audit(req, 'certificate.authorized', { targetType: 'Certificate', targetId: cert._id, targetLabel: `${cert.code} · ${cert.user.name}`, department: cert.course.department, details: { course: cert.course.title } });
   await notify(cert.user._id, { type: 'certificate', title: 'Your certificate is ready', body: `Your certificate for “${cert.course.title}” has been issued.`, link: `/certificates/${cert.code}` });
+  notifyTalentPool(cert.user._id);
   res.json({ message: `Certificate issued to ${cert.user.name}.` });
 });
 
@@ -160,6 +162,7 @@ router.post('/certificate-approvals/:id/revoke', requireAuth, async (req, res) =
   cert.revokeReason = reason;
   await cert.save();
   await audit(req, 'certificate.revoked', { targetType: 'Certificate', targetId: cert._id, targetLabel: `${cert.code} · ${cert.user.name}`, department: cert.course.department, details: { reason } });
+  notifyTalentPool(cert.user._id);
   res.json({ message: 'Certificate revoked.' });
 });
 
