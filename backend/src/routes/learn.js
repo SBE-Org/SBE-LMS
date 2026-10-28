@@ -90,7 +90,7 @@ router.get('/courses/:id', requireAuth, async (req, res) => {
 router.post('/courses/:id/enrol', requireAuth, async (req, res) => {
   assertCanLearn(req.user);
   const course = await Course.findOne({ _id: req.params.id, status: 'published' }).catch(() => null);
-  if (!course || !openTo(req.user, course)) fail(403, 'This course is not open for self-enrolment.');
+  if (!course || !openTo(req.user, course)) fail(403, 'This course is not open for self-enrollment.');
   await enrol(req.user._id, course._id);
   res.json({ message: `You are now enrolled in “${course.title}”.` });
 });
@@ -157,7 +157,7 @@ router.post('/lessons/:id/complete', requireAuth, async (req, res) => {
 
 /**
  * Lesson file. Opened directly by <video>, <iframe> and download links, which cannot send
- * an Authorization header, so it is authorised by the short-lived token in the URL.
+ * an Authorization header, so it is authorized by the short-lived token in the URL.
  */
 router.get('/lessons/:id/file', async (req, res) => {
   const userId = verifyFileToken(req.query.token, req.params.id);

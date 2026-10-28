@@ -18,6 +18,47 @@ async function loadAttempt(user, id) {
   return a;
 }
 
+/** Keeps only well-formed answers: { questionId: [choiceId, …] } for questions of this attempt. */
+function cleanAnswers(attempt, raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const ids = new Set(attempt.questionOrder.map(String));
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (!ids.has(k)) continue;
+    const list = (Array.isArray(v) ? v : v == null ? [] : [v]).map(String).filter((x) => /^[a-f0-9]{24}$/i.test(x)).slice(0, 50);
+    if (list.length) out[k] = list;
+  }
+  return out;
+}
+
+const TIME_UP = 'Time ran out, so the quiz was closed and marked with the answers you had given.';
+
+/**
+ * Closes attempts whose time limit (plus grace) has passed, grading them with the answers saved so far.
+ * `filter` narrows it (e.g. one learner). Runs when a learner opens a quiz, and every minute from server.js.
+ */
+export async function closeExpiredAttempts(filter = {}) {
+  // Only quizzes with a time limit can expire
+  const timed = await Quiz.find({ timeLimitMin: { $gt: 0 }, ...(filter.quiz ? { _id: filter.quiz } : {}) });
+  if (!timed.length) return 0;
+  const quizzes = new Map(timed.map((q) => [String(q._id), q]));
+  const shortest = Math.min(...timed.map((q) => q.timeLimitMin));
+  const open = await QuizAttempt.find({
+    ...filter, quiz: { $in: timed.map((q) => q._id) }, status: 'in_progress',
+    startedAt: { $lt: new Date(Date.now() - shortest * 60000 - GRACE_SECONDS * 1000) },
+  }).limit(500);
+  let n = 0;
+  for (const a of open) {
+    const q = quizzes.get(String(a.quiz));
+    const end = q && deadline(q, a);
+    if (end && Date.now() > end + GRACE_SECONDS * 1000) {
+      await grade(a, q, a.draft || {});
+      n++;
+    }
+  }
+  return n;
+}
+
 const deadline = (quiz, attempt) => (quiz.timeLimitMin ? attempt.startedAt.getTime() + quiz.timeLimitMin * 60000 : null);
 
 /** Questions of an attempt in the order the learner saw them, with their choices. */
@@ -35,7 +76,7 @@ router.get('/quizzes/:id', requireAuth, async (req, res) => {
   const course = await viewableCourse(u, quiz.course);
   const [enrolled, attempts, questionCount] = await Promise.all([
     isEnrolled(u._id, course._id),
-    QuizAttempt.find({ user: u._id, quiz: quiz._id }, '-answers -questionOrder').sort({ startedAt: -1, _id: -1 }).lean(),
+    closeExpiredAttempts({ user: u._id, quiz: quiz._id }).then(() => QuizAttempt.find({ user: u._id, quiz: quiz._id }, '-answers -questionOrder -draft').sort({ startedAt: -1, _id: -1 }).lean()),
     Question.countDocuments({ quiz: quiz._id }),
   ]);
   const submitted = attempts.filter((a) => a.status === 'submitted');
@@ -115,8 +156,8 @@ router.get('/attempts/:id', requireAuth, async (req, res) => {
   const course = await viewableCourse(req.user, quiz.course);
   const end = deadline(quiz, attempt);
   if (end && Date.now() > end + GRACE_SECONDS * 1000) {
-    await grade(attempt, quiz, {});
-    return res.json({ status: 'submitted', message: 'Time ran out for this attempt, so it was submitted without further answers.' });
+    await grade(attempt, quiz, attempt.draft || {});
+    return res.json({ status: 'submitted', message: TIME_UP });
   }
   const questions = (await attemptQuestions(attempt)).map((q) => ({
     _id: q._id,
@@ -133,7 +174,25 @@ router.get('/attempts/:id', requireAuth, async (req, res) => {
     course: { _id: course._id, title: course.title },
     questions,
     secondsLeft: end ? Math.max(0, Math.round((end - Date.now()) / 1000)) : null,
+    // Answers saved earlier (after a reload, or on another device), so the learner continues where they were
+    draft: cleanAnswers(attempt, attempt.draft),
   });
+});
+
+/** Saves the answers so far while the attempt is open. Called by the quiz page a moment after each change. */
+router.put('/attempts/:id/draft', requireAuth, async (req, res) => {
+  const attempt = await loadAttempt(req.user, req.params.id);
+  if (!sameId(attempt.user, req.user)) fail(403, 'You do not have permission to open this page.');
+  assertCanLearn(req.user);
+  if (attempt.status !== 'in_progress') return res.json({ status: 'submitted' });
+  const quiz = await loadQuiz(attempt.quiz);
+  const end = deadline(quiz, attempt);
+  if (end && Date.now() > end + GRACE_SECONDS * 1000) {
+    await grade(attempt, quiz, attempt.draft || {});
+    return res.json({ status: 'submitted', message: TIME_UP });
+  }
+  await QuizAttempt.updateOne({ _id: attempt._id, status: 'in_progress' }, { draft: cleanAnswers(attempt, req.body?.answers), draftAt: new Date() });
+  res.json({ status: 'saved' });
 });
 
 router.post('/attempts/:id', requireAuth, async (req, res) => {
@@ -146,8 +205,9 @@ router.post('/attempts/:id', requireAuth, async (req, res) => {
   let answers = req.body.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
   let message = null;
   if (end && Date.now() > end + GRACE_SECONDS * 1000) {
-    answers = {};
-    message = 'This attempt was submitted after the time limit, so the answers could not be accepted.';
+    // Too late for new answers: use the ones saved before the time ran out.
+    answers = attempt.draft || {};
+    message = TIME_UP;
   }
   await grade(attempt, quiz, answers);
   res.json({ status: 'submitted', message });

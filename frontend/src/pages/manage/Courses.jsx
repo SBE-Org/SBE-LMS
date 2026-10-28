@@ -46,7 +46,7 @@ export default function ManageCourses() {
                       <td className="small">{c.enrolled} enrolled<br /><span className="muted">{c.completed} completed</span></td>
                       <td className="small muted">{fmtDate(c.updatedAt)}</td>
                       <td className="right nowrap">
-                        <Link className="btn btn-ghost btn-sm" to={`/manage/courses/${c._id}/enrolments`}><Icon name="users" />Enrol</Link>{' '}
+                        <Link className="btn btn-ghost btn-sm" to={`/manage/courses/${c._id}/enrolments`}><Icon name="users" />Enroll</Link>{' '}
                         <Link className="btn btn-ghost btn-sm" to={`/manage/courses/${c._id}`}><Icon name="edit" />Build</Link>
                       </td>
                     </tr>

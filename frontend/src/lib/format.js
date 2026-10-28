@@ -25,7 +25,8 @@ export const ACCOUNT_STATUS = {
 export const SOURCE_LABELS = { self: 'Self-registered', registrar: 'Registrar', admin: 'Administrator', import: 'CSV import', legacy: 'Existing account', talent_pool: 'Talent Pool' };
 
 /** "registration.approved" → "Registration approved" */
-export const actionLabel = (a) => capitalize(String(a || '').replace(/[._]/g, ' '));
+// Audit keys keep the old spelling (enrolment.created); show the US spelling.
+export const actionLabel = (a) => capitalize(String(a || '').replace(/[._]/g, ' ').replace(/\benrolment/g, 'enrollment'));
 
 export function fmtBytes(n) {
   if (!n && n !== 0) return '';
@@ -90,12 +91,12 @@ export const fileKind = (name) => {
   const ext = String(name || '').split('.').pop().toLowerCase();
   if (ext === 'pdf') return 'pdf';
   if (['mp4', 'webm'].includes(ext)) return 'video';
-  if (['mp3', 'm4a', 'wav'].includes(ext)) return 'audio';
+  if (['mp3', 'm4a', 'wav', 'ogg', 'oga', 'opus', 'aac', 'flac', 'weba'].includes(ext)) return 'audio';
   if (['png', 'jpg', 'jpeg', 'gif'].includes(ext)) return 'image';
   return 'download';
 };
 
-/** Recognises YouTube, Vimeo and direct video links. */
+/** Recognizes YouTube, Vimeo and direct video links. */
 export function parseVideoUrl(url) {
   const u = String(url || '').trim();
   if (!u) return null;

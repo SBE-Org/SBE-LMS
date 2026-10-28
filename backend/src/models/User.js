@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema(
 
     /** The student's (or staff member's home) department. */
     department: { type: ObjectId, ref: 'Department', default: null, index: true },
-    /** Departments a Department Head or Registrar is authorised for. Empty for a registrar = every department. */
+    /** Departments a Department Head or Registrar is authorized for. Empty for a registrar = every department. */
     departments: [{ type: ObjectId, ref: 'Department' }],
     /** Extra permissions an administrator can grant explicitly. */
     permissions: {

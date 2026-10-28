@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, getToken, setToken, onApiError } from './api.js';
 
-/** Mixes a #rrggbb colour with white: amount 0..1 of the colour kept. */
+/** Mixes a #rrggbb color with white: amount 0..1 of the color kept. */
 export function tint(hex, amount) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
   if (!m) return null;
@@ -10,7 +10,7 @@ export function tint(hex, amount) {
   return `#${ch.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
 }
 
-/** Applies the institution's colours (from the administrator's settings) to the whole app. */
+/** Applies the institution's colors (from the administrator's settings) to the whole app. */
 export function applyBrandColors(colors) {
   const root = document.documentElement.style;
   if (!colors) return;

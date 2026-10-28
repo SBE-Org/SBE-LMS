@@ -7,7 +7,7 @@ import { requireAuth, requireRole, courseScope, canManageCourse } from '../middl
 import { scoped } from '../services/courseAccess.js';
 import { audit } from '../services/audit.js';
 import { progressMap, progressOf, enrol, recheckCourse, courseStructure } from '../services/progress.js';
-import { upload, storeUpload, deleteStoredFile, removeTemp, checkUploadType } from '../services/files.js';
+import { upload, storeUpload, deleteStoredFile, removeTemp, checkUploadType, UPLOAD_TYPES } from '../services/files.js';
 import { deleteCourse, deleteLessons, move, nextPosition, touchCourse } from '../services/content.js';
 import { parseVideoUrl } from '../utils/video.js';
 import { today, daysUntil, isYmd } from '../utils/dates.js';
@@ -199,13 +199,35 @@ router.get('/lessons/:id', async (req, res) => {
   res.json({ lesson, module: m, course, modules });
 });
 
+const isWebUrl = (u) => /^https?:\/\/[^\s]+$/i.test(String(u || ''));
+const audioType = (name) => UPLOAD_TYPES[String(name || '').split('.').pop().toLowerCase()] || '';
+
+/** Lesson links: [{ title, url }]. A link without a title uses its address; mailto: and tel: work too. At most 30. */
+function parseLinks(raw, errors) {
+  if (raw === undefined || raw === null || raw === '') return [];
+  let list;
+  try { list = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { errors.push('The lesson links could not be read.'); return []; }
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const [i, x] of list.slice(0, 30).entries()) {
+    let url = String(x?.url ?? '').trim().slice(0, 1000);
+    const title = String(x?.title ?? '').trim().slice(0, 200);
+    if (!url && !title) continue;
+    if (!url) { errors.push(`Link ${i + 1}: add the web address.`); continue; }
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url; // "www.example.com" → https://www.example.com
+    if (!/^(https?:|mailto:|tel:)/i.test(url)) { errors.push(`Link ${i + 1}: use a web address (https://…), an email (mailto:) or a phone number (tel:).`); continue; }
+    out.push({ title: title || url, url });
+  }
+  return out;
+}
+
 /** Shared by create and update. `existing` is null for a new lesson. */
 async function saveLesson(req, res, module, existing) {
   const course = await getCourse(module.course, req);
   const b = req.body || {};
   const file = req.file || null;
   try {
-    const type = ['text', 'video', 'file'].includes(b.type) ? b.type : 'text';
+    const type = ['text', 'video', 'audio', 'file'].includes(b.type) ? b.type : 'text';
     let target = module._id;
     if (isId(b.moduleId) && (await Module.exists({ _id: b.moduleId, course: course._id }))) target = toId(b.moduleId);
     const data = {
@@ -214,10 +236,13 @@ async function saveLesson(req, res, module, existing) {
       title: str(b.title, 200),
       type,
       body: typeof b.body === 'string' ? b.body : '',
-      videoUrl: str(b.videoUrl, 500) || null,
+      videoUrl: type === 'video' ? str(b.videoUrl, 500) || null : null,
+      audioUrl: type === 'audio' ? str(b.audioUrl, 500) || null : null,
       durationMin: intOr(b.durationMin),
     };
     const errors = [];
+    // Links come as a JSON list [{ title, url }] (the form is multipart because of the file upload).
+    data.links = parseLinks(b.links, errors);
     if (!data.title) errors.push('Enter a lesson title.');
     if (type === 'video' && data.videoUrl && !parseVideoUrl(data.videoUrl)) {
       errors.push('The video link must be a YouTube or Vimeo link, or a direct link to an .mp4/.webm file. You can also upload the video file instead.');
@@ -225,6 +250,9 @@ async function saveLesson(req, res, module, existing) {
     const hasOld = !!existing?.file?.id;
     if (type === 'file' && !file && !hasOld) errors.push('Choose a file to upload for this lesson.');
     if (type === 'video' && !data.videoUrl && !file && !hasOld) errors.push('Add a video link or upload a video file.');
+    if (type === 'audio' && data.audioUrl && !isWebUrl(data.audioUrl)) errors.push('The audio link must start with http:// or https://.');
+    if (type === 'audio' && !data.audioUrl && !file && !hasOld) errors.push('Add an audio link or upload an audio file (MP3, M4A, WAV, OGG, AAC…).');
+    if (type === 'audio' && file && !/^audio\//.test(audioType(file.originalname))) errors.push('For an audio lesson, upload an audio file (MP3, M4A, WAV, OGG, AAC, FLAC, OPUS).');
     if (!errors.length && file) {
       try {
         checkUploadType(file);
@@ -392,7 +420,7 @@ router.delete('/enrolments/:id', async (req, res) => {
 router.delete('/team-courses/:id', async (req, res) => {
   const tc = await scoped(req, TeamCourse, req.params.id, 'Not found.');
   await TeamCourse.deleteOne({ _id: tc._id });
-  res.json({ message: 'New team members will no longer be enrolled automatically. Current enrolments are unchanged.' });
+  res.json({ message: 'New team members will no longer be enrolled automatically. Current enrollments are unchanged.' });
 });
 
 export default router;

@@ -46,7 +46,7 @@ export async function deleteCourse(courseId) {
   await Course.deleteOne({ _id: courseId });
 }
 
-/** Swaps an item with its neighbour, renumbering positions 1..n. */
+/** Swaps an item with its neighbor, renumbering positions 1..n. */
 export async function move(Model, parentFilter, itemId, dir) {
   const ids = (await Model.find(parentFilter, '_id').sort({ position: 1, _id: 1 }).lean()).map((d) => String(d._id));
   const i = ids.indexOf(String(itemId));

@@ -92,7 +92,7 @@ export default function Layout() {
             )}
             {hasRole(user, 'admin') && (
               <>
-                <p className="nav-label">Organisation</p>
+                <p className="nav-label">Organization</p>
                 <NavLink to="/admin/users"><Icon name="users" />People</NavLink>
                 <NavLink to="/admin/departments"><Icon name="building" />Departments</NavLink>
                 <NavLink to="/admin/teams"><Icon name="team" />Teams</NavLink>

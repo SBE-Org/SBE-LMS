@@ -165,7 +165,7 @@ export default function RegistrationForm({
 
       {!limited && (
         <fieldset className="form-section">
-          <legend>Programme</legend>
+          <legend>Program</legend>
           <div className="grid-2">
             <label className="field"><span>Department <Req /></span>
               <select value={v.department} onChange={(e) => setV({ ...v, department: e.target.value, program: '' })} required>

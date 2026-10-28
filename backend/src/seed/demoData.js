@@ -77,9 +77,9 @@ export async function seedDemo(adminId) {
 
   // ---- departments (one per team in the demo) ----
   const deptDefs = [
-    ['Customer Service', 'CS', 'Inbound and outbound customer care programmes.', ['Customer Care Associate', 'Technical Support Associate']],
-    ['Sales & Retention', 'SALES', 'Telesales, retention and collections programmes.', ['Telesales Associate', 'Retention Specialist']],
-    ['Back Office Operations', 'BO', 'Data entry, verification and processing programmes.', ['Data Processing Associate']],
+    ['Customer Service', 'CS', 'Inbound and outbound customer care programs.', ['Customer Care Associate', 'Technical Support Associate']],
+    ['Sales & Retention', 'SALES', 'Telesales, retention and collections programs.', ['Telesales Associate', 'Retention Specialist']],
+    ['Back Office Operations', 'BO', 'Data entry, verification and processing programs.', ['Data Processing Associate']],
   ];
   const departments = [];
   for (const [name, code, description, programs] of deptDefs) {

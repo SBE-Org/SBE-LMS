@@ -52,7 +52,7 @@ export default function CertificatePage() {
         <Flashes />
         {state.data && !issued && (
           <div className="flash flash-info">
-            {state.data.certificate.status === 'pending' ? 'Preview: this certificate is waiting for authorisation and is not valid yet.' : 'This certificate has been revoked and is no longer valid.'}
+            {state.data.certificate.status === 'pending' ? 'Preview: this certificate is waiting for authorization and is not valid yet.' : 'This certificate has been revoked and is no longer valid.'}
           </div>
         )}
       </div>

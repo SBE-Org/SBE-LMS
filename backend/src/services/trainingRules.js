@@ -3,7 +3,7 @@
  *
  *   none      the course gives no certificate      → finished when every lesson is done and every quiz passed
  *   auto      the certificate is issued at the end → the same
- *   approval  the certificate needs authorisation  → finished only once the certificate is authorised (issued)
+ *   approval  the certificate needs authorization  → finished only once the certificate is authorized (issued)
  */
 export function certificateRule(course) {
   if (!course?.certificateEnabled) return 'none';

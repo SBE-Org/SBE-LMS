@@ -10,14 +10,14 @@ import { Errors, Guard } from '../../components/ui.jsx';
 
 const TABS = [['branding', 'Branding and appearance'], ['certificate', 'Certificates'], ['registration', 'Registration form']];
 const SIZES = [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']];
-const ALIGNS = [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']];
+const ALIGNS = [['left', 'Left'], ['center', 'Center'], ['right', 'Right']];
 const MAX_IMAGE_MB = 2;
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
 /** Placements whose size/alignment are fixed by the layout or set on the Certificates tab. */
 const FIXED_ALIGN = ['header'];
 const CERT_PLACEMENTS = ['certificateTemplate', 'certificatePdf'];
 
-// ---- colour contrast (WCAG 2.1) -------------------------------------------------------
+// ---- color contrast (WCAG 2.1) -------------------------------------------------------
 function luminance(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
   if (!m) return 1;
@@ -256,7 +256,7 @@ export default function Settings() {
     }
   };
 
-  // Preview = saved images + unsaved text, colours and placements.
+  // Preview = saved images + unsaved text, colors and placements.
   const preview = useMemo(() => {
     if (!state.data || !draft) return null;
     const pub = state.data.branding;
@@ -319,7 +319,7 @@ export default function Settings() {
                       <label className="field"><span>Platform name</span><input value={draft.branding.appName} onChange={(e) => setB('appName', e.target.value)} maxLength={120} placeholder={meta.appName} /></label>
                     </div>
                     <div className="grid-3">
-                      {[['primary', 'Primary colour'], ['primaryDark', 'Dark primary (navigation)'], ['accent', 'Accent colour']].map(([k, label]) => (
+                      {[['primary', 'Primary color'], ['primaryDark', 'Dark primary (navigation)'], ['accent', 'Accent color']].map(([k, label]) => (
                         <label key={k} className="field"><span>{label}</span>
                           <span className="color-field">
                             <input type="color" value={c[k]} onChange={(e) => setColor(k, e.target.value)} aria-label={`${label} picker`} />
@@ -331,7 +331,7 @@ export default function Settings() {
                     <ul className="contrast-list small">
                       {ratios.map(([label, r]) => (
                         <li key={label} className={r >= 4.5 ? 'text-success' : 'text-danger'}>
-                          <Icon name={r >= 4.5 ? 'check' : 'alert'} className="icon icon-inline" /> {label}: contrast {r.toFixed(1)}:1 {r >= 4.5 ? '— readable' : '— too low; choose a darker colour (at least 4.5:1)'}
+                          <Icon name={r >= 4.5 ? 'check' : 'alert'} className="icon icon-inline" /> {label}: contrast {r.toFixed(1)}:1 {r >= 4.5 ? '— readable' : '— too low; choose a darker color (at least 4.5:1)'}
                         </li>
                       ))}
                     </ul>
@@ -416,7 +416,7 @@ export default function Settings() {
                       <label className="check"><input type="checkbox" checked={!!draft.branding.placements.certificatePdf?.enabled} onChange={(e) => setPlacement('certificatePdf', 'enabled', e.target.checked)} /> <span>Logo on downloaded PDF certificates</span></label>
                       <label className="check"><input type="checkbox" checked={draft.certificate.showDepartment} onChange={(e) => setC('showDepartment', e.target.checked)} /> <span>Show the department name</span></label>
                     </div>
-                    <label className="check"><input type="checkbox" checked={draft.certificate.useSeparateLogo} onChange={(e) => setC('useSeparateLogo', e.target.checked)} /> <span><strong>Use a separate logo on certificates</strong> (e.g. a full-colour or high-resolution version)</span></label>
+                    <label className="check"><input type="checkbox" checked={draft.certificate.useSeparateLogo} onChange={(e) => setC('useSeparateLogo', e.target.checked)} /> <span><strong>Use a separate logo on certificates</strong> (e.g. a full-color or high-resolution version)</span></label>
                     {draft.certificate.useSeparateLogo && (
                       <ImageSlot kind="certificateLogo" label="Certificate logo" help="Falls back to the main logo when empty." currentUrl={data.branding.certificateLogoUrl} onSaved={(res) => afterServer(res)} onPending={setPendingCertLogo} />
                     )}

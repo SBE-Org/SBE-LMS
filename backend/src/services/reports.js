@@ -5,7 +5,7 @@ import { toId } from '../utils/http.js';
 
 /**
  * Active user ids (strings) in scope.
- * scope: null = everyone; an array = team ids (original behaviour);
+ * scope: null = everyone; an array = team ids (original behavior);
  * { teamIds, departmentIds } = people in any of those teams or departments.
  */
 export async function scopedUserIds(scope) {

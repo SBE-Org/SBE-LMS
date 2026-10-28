@@ -20,7 +20,7 @@ export function EnrolmentBadge({ completedAt, dueDate, pct }) {
   return pct > 0 ? <Badge tone="info">In progress</Badge> : <Badge>Not started</Badge>;
 }
 
-export const LessonIcon = ({ type }) => <Icon name={{ video: 'play', file: 'file' }[type] || 'text'} />;
+export const LessonIcon = ({ type }) => <Icon name={{ video: 'play', audio: 'audio', file: 'file' }[type] || 'text'} />;
 
 export const STATUS_TONE = { published: 'success', draft: 'warning', archived: 'neutral' };
 

@@ -54,14 +54,14 @@ router.get('/certificates', requireAuth, async (req, res) => {
 
 /**
  * Certificate (preview, PDF, print). Learners only see issued certificates; staff who can see
- * the learner also see pending ones (marked as such) so they can check them before authorising.
+ * the learner also see pending ones (marked as such) so they can check them before authorizing.
  */
 router.get('/certificates/:code', requireAuth, async (req, res) => {
   const cert = await find(req.params.code);
   if (!cert) fail(404, 'Certificate not found.');
   if (!(await canSeePerson(req.user, cert.userId))) fail(403, 'You do not have permission to open this certificate.');
   const own = String(cert.userId) === String(req.user._id);
-  if (own && cert.status === 'pending') fail(403, 'This certificate is waiting for authorisation by your department. You will be notified when it is issued.', { code: 'CERTIFICATE_PENDING' });
+  if (own && cert.status === 'pending') fail(403, 'This certificate is waiting for authorization by your department. You will be notified when it is issued.', { code: 'CERTIFICATE_PENDING' });
   if (own && cert.status === 'revoked') fail(410, 'This certificate has been revoked.');
   const settings = await getSettings();
   const branding = publicBranding(settings);
@@ -84,9 +84,9 @@ router.get('/verify', async (req, res) => {
   });
 });
 
-// ---- authorisation by the issuing authority -----------------------------------------
+// ---- authorization by the issuing authority -----------------------------------------
 
-/** Course filter for certificates the user may authorise. null = all. */
+/** Course filter for certificates the user may authorize. null = all. */
 function authorityCourseScope(user) {
   if (hasRole(user, 'admin')) return null;
   if (hasRole(user, 'department_head')) return { department: { $in: assignedDepartmentIds(user).map(toId) } };
@@ -100,7 +100,7 @@ function authorityCourseScope(user) {
 
 router.get('/certificate-approvals', requireAuth, async (req, res) => {
   const scope = authorityCourseScope(req.user);
-  if (scope === false) fail(403, 'You do not have permission to authorise certificates.');
+  if (scope === false) fail(403, 'You do not have permission to authorize certificates.');
   const status = ['pending', 'issued', 'revoked'].includes(req.query.status) ? req.query.status : 'pending';
   const courseIds = scope === null ? null : (await Course.find(scope, '_id').lean()).map((c) => c._id);
   const filter = status === 'issued' ? { ...ISSUED } : { status };
@@ -127,7 +127,7 @@ async function loadForAuthority(req) {
   if (!isId(req.params.id)) fail(404, 'Certificate not found.');
   const cert = await Certificate.findById(req.params.id).populate('course', 'title department').populate('user', 'name');
   if (!cert || !cert.course || !cert.user) fail(404, 'Certificate not found.');
-  if (!canAuthorizeCertificates(req.user, cert.course.department)) fail(403, 'You cannot authorise certificates for this course.');
+  if (!canAuthorizeCertificates(req.user, cert.course.department)) fail(403, 'You cannot authorize certificates for this course.');
   return cert;
 }
 
@@ -142,7 +142,7 @@ router.post('/certificate-approvals/:id/authorize', requireAuth, async (req, res
     { status: 'issued', issuedAt: now, authorizedBy: req.user._id, authorizedAt: now },
     { new: true }
   );
-  if (!updated) fail(409, 'This certificate is not waiting for authorisation (it may already be issued).');
+  if (!updated) fail(409, 'This certificate is not waiting for authorization (it may already be issued).');
   await audit(req, 'certificate.authorized', { targetType: 'Certificate', targetId: cert._id, targetLabel: `${cert.code} · ${cert.user.name}`, department: cert.course.department, details: { course: cert.course.title } });
   await notify(cert.user._id, { type: 'certificate', title: 'Your certificate is ready', body: `Your certificate for “${cert.course.title}” has been issued.`, link: `/certificates/${cert.code}` });
   notifyTalentPool(cert.user._id);

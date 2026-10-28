@@ -44,7 +44,7 @@ const MIGRATIONS = [
       // 3. Certificates created before statuses existed are issued.
       const c = await Certificate.updateMany({ status: { $exists: false } }, { $set: { status: 'issued' } });
 
-      // 4. Courses: explicit defaults (no behaviour change).
+      // 4. Courses: explicit defaults (no behavior change).
       await Course.updateMany({ department: { $exists: false } }, { $set: { department: null } });
       await Course.updateMany({ certificateRequiresApproval: { $exists: false } }, { $set: { certificateRequiresApproval: false } });
 

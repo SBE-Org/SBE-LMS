@@ -153,6 +153,22 @@ try {
   check('Passed attempt includes the question review', r.json.reviewHidden === false && r.json.questions.length === questions.length);
   const enrol = await M.Enrolment.findOne({ user: agentUser._id, course: cid });
   check('Course marked complete', !!enrol.completedAt);
+
+  // Timed quiz: answers are saved as the learner goes; when the time runs out the attempt is closed with them
+  const saved = { timeLimitMin: quiz.timeLimitMin, maxAttempts: quiz.maxAttempts };
+  await M.Quiz.updateOne({ _id: quiz._id }, { timeLimitMin: 1, maxAttempts: 0 });
+  r = await agent.post(`/quizzes/${quiz._id}/start`);
+  const attempt3 = r.json.attemptId;
+  r = await agent.put(`/attempts/${attempt3}/draft`, { answers: { ...right, nope: ['x'] } });
+  check('Answers are saved while the quiz is open', r.json.status === 'saved');
+  r = await agent.get(`/attempts/${attempt3}`);
+  check('Saved answers come back after a reload', Object.keys(r.json.draft || {}).length === questions.length && !('nope' in r.json.draft));
+  await M.QuizAttempt.updateOne({ _id: attempt3 }, { startedAt: new Date(Date.now() - 10 * 60000) }); // the time ran out long ago
+  r = await agent.get(`/quizzes/${quiz._id}`);
+  a = await M.QuizAttempt.findById(attempt3);
+  check('Expired attempt is closed with the saved answers', a.status === 'submitted' && a.percent === 100 && !r.json.open);
+  await M.QuizAttempt.deleteOne({ _id: attempt3 });
+  await M.Quiz.updateOne({ _id: quiz._id }, saved);
   const myCert = await M.Certificate.findOne({ user: agentUser._id, course: cid });
   check('Certificate issued', !!myCert);
   r = await agent.get(`/certificates/${myCert.code}`);
@@ -213,6 +229,22 @@ try {
   check('Video lesson added', r.status === 201);
   r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'Bad video', type: 'video', moduleId: mod, videoUrl: 'https://example.com/page' }));
   check('Unsupported video link is rejected', r.status === 422);
+  // Audio lessons (upload or link) and lesson links
+  r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'Call recording', type: 'audio', moduleId: mod }, { content: 'ID3', type: 'audio/mpeg', name: 'call.mp3' }));
+  const la = r.json.lesson;
+  check('Audio lesson with an uploaded file', r.status === 201 && la.type === 'audio' && la.file?.name === 'call.mp3', r.json.error);
+  r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'Podcast', type: 'audio', moduleId: mod, audioUrl: 'https://example.com/ep1.mp3',
+    links: JSON.stringify([{ title: 'Script', url: 'example.com/script' }, { title: '', url: 'mailto:help@shaggar.test' }, { title: '', url: '' }]) }));
+  const lp = r.json.lesson;
+  check('Audio link and lesson links saved', r.status === 201 && lp.audioUrl === 'https://example.com/ep1.mp3' && lp.links.length === 2 && lp.links[0].url === 'https://example.com/script' && lp.links[1].title === 'mailto:help@shaggar.test', r.json.error);
+  r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'No audio', type: 'audio', moduleId: mod }));
+  check('Audio lesson without audio is rejected', r.status === 422);
+  r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'Audio but PDF', type: 'audio', moduleId: mod }, { content: pdf, type: 'application/pdf', name: 'x.pdf' }));
+  check('Audio lesson with a non-audio file is rejected', r.status === 422);
+  r = await tr.post(`/manage/modules/${mod}/lessons`, lessonForm({ title: 'Bad link', type: 'text', moduleId: mod, links: JSON.stringify([{ title: 'x', url: 'javascript:alert(1)' }]) }));
+  check('Unsafe lesson link is rejected', r.status === 422 && !(await M.Lesson.exists({ title: 'Bad link' })));
+  await tr.del(`/manage/lessons/${la._id}`);
+  await tr.del(`/manage/lessons/${lp._id}`);
   await tr.post(`/manage/lessons/${l1}/move`, { dir: 'down' });
   check('Lesson reordered', (await M.Lesson.findById(l1)).position === 2);
   r = await tr.get(`/lessons/${l2._id}`);
@@ -513,7 +545,7 @@ try {
   check('Department Head enrols own students only', (await M.Enrolment.exists({ user: abel._id, course: csCourse })) && !(await M.Enrolment.exists({ user: liyaId, course: csCourse })));
   r = await stu.post(`/lessons/${csLesson}/complete`, {});
   const pendingCert = await M.Certificate.findOne({ user: abel._id, course: csCourse });
-  check('Completion creates a certificate waiting for authorisation', r.json.finished === true && pendingCert?.status === 'pending');
+  check('Completion creates a certificate waiting for authorization', r.json.finished === true && pendingCert?.status === 'pending');
   r = await stu.get('/certificates');
   check('Pending certificate is not listed for the student yet', !r.json.certificates.some((c) => c.code === pendingCert.code) && r.json.pending === 1);
   r = await stu.get(`/certificates/${pendingCert.code}`);
@@ -521,15 +553,15 @@ try {
   r = await anon.get(`/verify?code=${pendingCert.code}`);
   check('Pending certificate does not verify', r.json.valid === false);
   r = await reg.get('/certificate-approvals');
-  check('Registrar cannot authorise certificates by default (403)', r.status === 403);
+  check('Registrar cannot authorize certificates by default (403)', r.status === 403);
   r = await hcs.get('/certificate-approvals');
-  check('Department Head sees certificates to authorise', r.status === 200 && r.json.certificates.some((c) => c.code === pendingCert.code));
+  check('Department Head sees certificates to authorize', r.status === 200 && r.json.certificates.some((c) => c.code === pendingCert.code));
   r = await hcs.post(`/certificate-approvals/${pendingCert._id}/authorize`);
-  check('Department Head authorises the certificate', r.status === 200 && (await M.Certificate.findById(pendingCert._id)).status === 'issued');
+  check('Department Head authorizes the certificate', r.status === 200 && (await M.Certificate.findById(pendingCert._id)).status === 'issued');
   r = await hcs.post(`/certificate-approvals/${pendingCert._id}/authorize`);
   check('No double issuing', r.status === 409 && (await M.Certificate.countDocuments({ user: abel._id, course: csCourse })) === 1);
   r = await anon.get(`/verify?code=${pendingCert.code}`);
-  check('Authorised certificate verifies without exposing private details', r.json.valid === true && !('employeeId' in r.json.certificate) && !('email' in r.json.certificate));
+  check('Authorized certificate verifies without exposing private details', r.json.valid === true && !('employeeId' in r.json.certificate) && !('email' in r.json.certificate));
   r = await stu.get(`/certificates/${pendingCert.code}`);
   check('Student opens the issued certificate with branding', r.status === 200 && r.json.certificate.departmentName === 'Customer Service' && !!r.json.branding?.certificate);
 
@@ -581,12 +613,12 @@ try {
   const oldLeft = await mongoose.connection.db.collection('brandingFiles.files').countDocuments({ _id: new mongoose.Types.ObjectId(oldLogoId) });
   check('Replacing the logo keeps only the new file', r.status === 200 && r.json.branding.logoUrl !== logoUrl && oldLeft === 0);
   r = await ad.put('/admin/settings', { branding: { placements: { login: { enabled: false, size: 'large', align: 'center' }, dashboardStudent: { enabled: true, size: 'small', align: 'right' } }, colors: { primary: '#123456' } } });
-  check('Logo placements and colours saved', r.status === 200);
+  check('Logo placements and colors saved', r.status === 200);
   r = await anon.get('/meta');
   check('Placements persist and are public', r.json.branding.placements.login.enabled === false && r.json.branding.placements.dashboardStudent.enabled === true
     && r.json.branding.placements.dashboardStudent.align === 'right' && r.json.branding.colors.primary === '#123456' && !!r.json.branding.logoUrl);
   r = await ad.put('/admin/settings', { branding: { colors: { primary: 'red' } } });
-  check('Invalid colour rejected', r.status === 422);
+  check('Invalid color rejected', r.status === 422);
   r = await ad.put('/admin/settings', { certificate: { signatories: [{ name: 'Dr. Almaz Bekele', title: 'Academic Director' }, { name: 'Yohannes T.', title: 'Registrar' }], logoPosition: 'top', logoAlign: 'center' } });
   r = await ad.post('/admin/settings/files/signature1', imgForm(png, 'sig.png', 'image/png'));
   check('Certificate signatories and signature image saved', r.status === 200 && r.json.branding.certificate.signatories.length === 2 && !!r.json.branding.certificate.signatories[1].signatureUrl

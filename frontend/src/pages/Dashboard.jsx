@@ -74,7 +74,7 @@ function AdminPanel({ admin }) {
           <Stat label="Active students" value={t.students} />
           <Stat label="Pending registrations" value={t.pending} sub={`${t.correction_requested} awaiting correction`} alert={t.pending > 0} to="/registrations?status=pending" />
           <Stat label="Departments" value={t.departments} sub={`${t.courses} published courses`} to="/admin/departments" />
-          <Stat label="Certificates issued" value={t.certificates} sub={t.pendingCertificates ? `${t.pendingCertificates} waiting for authorisation` : 'none waiting'} to="/manage/certificates" />
+          <Stat label="Certificates issued" value={t.certificates} sub={t.pendingCertificates ? `${t.pendingCertificates} waiting for authorization` : 'none waiting'} to="/manage/certificates" />
         </div>
       </section>
       <section className="section two-col">
@@ -126,7 +126,7 @@ function DepartmentHeadPanel({ d }) {
           <Stat label="Pending applications" value={d.counts.pending} alert={d.counts.pending > 0} to="/registrations?status=pending" />
           <Stat label="Approved students" value={d.counts.approved} sub={`${d.counts.correction_requested} awaiting correction · ${d.counts.rejected} rejected`} />
           <Stat label="Average quiz score" value={d.assessments.avgScore !== null ? `${d.assessments.avgScore}%` : '—'} sub={d.assessments.attempts ? `${d.assessments.passRate}% of ${d.assessments.attempts} attempts passed` : 'no attempts yet'} />
-          <Stat label="Certificates to authorise" value={d.pendingCertificates} alert={d.pendingCertificates > 0} to="/manage/certificates" />
+          <Stat label="Certificates to authorize" value={d.pendingCertificates} alert={d.pendingCertificates > 0} to="/manage/certificates" />
         </div>
       </section>
       <section className="section two-col">
@@ -223,7 +223,7 @@ function StudentPanel({ s }) {
           </div>
         </section>
       )}
-      {s.pendingCertificates > 0 && <div className="flash flash-info">{plural(s.pendingCertificates, 'certificate is', 'certificates are')} waiting for authorisation by your department.</div>}
+      {s.pendingCertificates > 0 && <div className="flash flash-info">{plural(s.pendingCertificates, 'certificate is', 'certificates are')} waiting for authorization by your department.</div>}
     </>
   );
 }
@@ -273,9 +273,9 @@ export default function Dashboard() {
                 </div>
                 <div className="stats">
                   <div className="stat"><span className="stat-label">Active learners</span><span className="stat-value">{snapshot.learners}</span></div>
-                  <div className="stat"><span className="stat-label">Completion rate</span><span className="stat-value">{snapshot.completionRate}%</span><span className="stat-sub">{snapshot.completed} of {snapshot.enrolments} enrolments</span></div>
+                  <div className="stat"><span className="stat-label">Completion rate</span><span className="stat-value">{snapshot.completionRate}%</span><span className="stat-sub">{snapshot.completed} of {snapshot.enrolments} enrollments</span></div>
                   <div className="stat"><span className="stat-label">Average quiz score</span><span className="stat-value">{snapshot.avgScore !== null ? `${snapshot.avgScore}%` : '—'}</span></div>
-                  <div className={`stat ${snapshot.overdue ? 'stat-alert' : ''}`}><span className="stat-label">Overdue</span><span className="stat-value">{snapshot.overdue}</span><span className="stat-sub">enrolments past due date</span></div>
+                  <div className={`stat ${snapshot.overdue ? 'stat-alert' : ''}`}><span className="stat-label">Overdue</span><span className="stat-value">{snapshot.overdue}</span><span className="stat-sub">enrollments past due date</span></div>
                 </div>
               </section>
             )}

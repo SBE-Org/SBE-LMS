@@ -98,7 +98,7 @@ export default function MyRegistration() {
             {editable !== 'none' && (
               <section className="section">
                 <h2>{editable === 'full' ? (st === 'correction_requested' ? 'Correct and resubmit' : 'Update your application') : 'Update your contact details'}</h2>
-                {editable === 'contact' && <p className="muted small">Your name, department, programme and student ID are protected now that you are approved. Ask the registrar if they need to change.</p>}
+                {editable === 'contact' && <p className="muted small">Your name, department, program and student ID are protected now that you are approved. Ask the registrar if they need to change.</p>}
                 <RegistrationForm
                   mode={editable === 'full' ? 'student' : 'profile'}
                   departments={departments}

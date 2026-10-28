@@ -33,7 +33,7 @@ const departmentsFor = async (scope) => {
   return Department.find(filter, 'name code programs').sort({ name: 1 }).lean();
 };
 
-/** Full application as shown to staff and to the student. Sensitive details only go to authorised viewers. */
+/** Full application as shown to staff and to the student. Sensitive details only go to authorized viewers. */
 function shape(u, settings, { forStaff = false } = {}) {
   const reg = u.registration || {};
   const docUrl = (d) => (forStaff ? `/registrations/${u._id}/documents/${d._id}` : `/registration/me/documents/${d._id}`);

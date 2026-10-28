@@ -1,4 +1,4 @@
-/** Recognises YouTube, Vimeo and direct video links. Returns null if unsupported. */
+/** Recognizes YouTube, Vimeo and direct video links. Returns null if unsupported. */
 export function parseVideoUrl(url) {
   const u = String(url || '').trim();
   if (!u) return null;

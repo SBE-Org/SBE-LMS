@@ -96,7 +96,7 @@ export default function CourseForm() {
             <label className="check"><input type="checkbox" checked={form.selfEnrol} onChange={set('selfEnrol')} /> <span><strong>Open to join</strong> — approved students (of the course’s department, if it has one) can join without being assigned</span></label>
             <label className="check"><input type="checkbox" checked={form.certificateEnabled} onChange={set('certificateEnabled')} /> <span><strong>Issue a certificate</strong> when a learner finishes every lesson and passes every quiz</span></label>
             {form.certificateEnabled && (
-              <label className="check"><input type="checkbox" checked={form.certificateRequiresApproval} onChange={set('certificateRequiresApproval')} /> <span><strong>Certificates need authorisation</strong> — the Department Head (or an administrator) must authorise each certificate before it is issued</span></label>
+              <label className="check"><input type="checkbox" checked={form.certificateRequiresApproval} onChange={set('certificateRequiresApproval')} /> <span><strong>Certificates need authorization</strong> — the Department Head (or an administrator) must authorize each certificate before it is issued</span></label>
             )}
             <div className="actions">
               <button className="btn btn-primary" type="submit" disabled={busy}>{id ? 'Save changes' : 'Create course'}</button>
@@ -107,7 +107,7 @@ export default function CourseForm() {
           {id && (
             <form onSubmit={remove} className="card form danger-zone">
               <h2>Delete course</h2>
-              <p className="muted small">This permanently removes the course with its lessons, quizzes, enrolments, results and certificates. To keep results, set the status to Archived instead.</p>
+              <p className="muted small">This permanently removes the course with its lessons, quizzes, enrollments, results and certificates. To keep results, set the status to Archived instead.</p>
               {deleteError && <div className="flash flash-error" role="alert">{deleteError}</div>}
               <label className="field"><span>Type the course title to confirm</span><input value={confirmTitle} onChange={(e) => setConfirmTitle(e.target.value)} autoComplete="off" /></label>
               <div className="actions"><button className="btn btn-danger" type="submit"><Icon name="trash" />Delete permanently</button></div>

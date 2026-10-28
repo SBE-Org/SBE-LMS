@@ -96,7 +96,7 @@ function newCertificateCode() {
 
 /**
  * Creates the learner's certificate for a course (never a second one).
- * With `pending`, it waits for the issuing authority (Department Head / administrator) to authorise it.
+ * With `pending`, it waits for the issuing authority (Department Head / administrator) to authorize it.
  */
 export async function issueCertificate(userId, courseId, { pending = false, completedAt = new Date() } = {}) {
   const existing = await Certificate.findOne({ user: userId, course: courseId });
@@ -140,7 +140,7 @@ export async function checkCompletion(userId, courseId) {
   return complete;
 }
 
-/** Tells the people who can authorise it that a certificate is waiting. */
+/** Tells the people who can authorize it that a certificate is waiting. */
 async function announcePendingCertificate(cert) {
   const [course, learner] = await Promise.all([
     Course.findById(cert.course, 'title department').lean(),
@@ -149,7 +149,7 @@ async function announcePendingCertificate(cert) {
   const { notifyDepartmentHeads, notify } = await import('./notify.js');
   const message = {
     type: 'certificate',
-    title: 'Certificate waiting for authorisation',
+    title: 'Certificate waiting for authorization',
     body: `${learner?.name || 'A learner'} completed “${course?.title || 'a course'}”.`,
     link: '/manage/certificates',
   };

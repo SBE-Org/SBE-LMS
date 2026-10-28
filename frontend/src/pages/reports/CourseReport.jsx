@@ -28,7 +28,7 @@ export default function CourseReport() {
               <div><h1>{course.title}</h1><p className="muted">{totals.lessons} lessons · {totals.quizzes} quizzes</p></div>
               <div className="actions no-print">
                 <PrintButton />
-                {canBuild(user) && <Link className="btn btn-ghost" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Manage enrolments</Link>}
+                {canBuild(user) && <Link className="btn btn-ghost" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Manage enrollments</Link>}
               </div>
             </div>
             <TeamFilter options={teamOptions} team={team} isTeamLead={isTeamLead} onChange={(v) => setParams(v ? { team: v } : {})} />

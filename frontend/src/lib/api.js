@@ -72,7 +72,7 @@ export async function protectedImageUrl(path) {
   return URL.createObjectURL(await res.blob());
 }
 
-export async function request(method, path, data, { raw = false } = {}) {
+export async function request(method, path, data, { raw = false, keepalive = false } = {}) {
   const headers = {};
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -84,7 +84,8 @@ export async function request(method, path, data, { raw = false } = {}) {
   }
   let res;
   try {
-    res = await fetch(`${API_URL}/api${path}`, { method, headers, body });
+    // keepalive lets a request finish while the page is closing (e.g. saving quiz answers)
+    res = await fetch(`${API_URL}/api${path}`, { method, headers, body, keepalive });
   } catch {
     throw new ApiError(0, { error: 'Cannot reach the server. Check your internet connection and try again.' });
   }

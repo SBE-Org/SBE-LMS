@@ -1,3 +1,17 @@
+# v2.2 — Audio lessons, lesson links, safer timed quizzes, spelling and form alignment
+
+- **Spelling:** US spelling everywhere people read it: *Enroll / enrollment* (was enrol / enrolment), *authorize*, *color*, *program*, *organization*, *center*.
+  Code names, API routes and database fields keep their old names, so existing data and links keep working.
+- **Form alignment:** every text-like input (phone, web address, time…) now has the same look and height as the others; drop-downs match the height of the text boxes beside them.
+- **Lessons:**
+  - New lesson type **Audio**: upload an audio file (MP3, M4A, WAV, OGG, AAC, FLAC, OPUS) or give a direct link; learners get an audio player.
+  - **Links** on any lesson: title + address (web, `mailto:`, `tel:`), shown as a list under the lesson and opened in a new tab. `javascript:` and other unsafe links are refused.
+- **Timed quizzes:** answers are saved on the server as the learner goes (and when the tab is hidden or closed).
+  When the time is up the quiz locks and submits the answers given, retrying if the connection drops. If the browser was closed,
+  the server closes the attempt with the saved answers (checked every minute, and when the learner opens the quiz again) — the learner no longer gets 0 for answers they gave.
+  After a reload, the saved answers are filled back in.
+- New fields (all optional, no migration needed): `Lesson.audioUrl`, `Lesson.links`, `QuizAttempt.draft`, `QuizAttempt.draftAt`. New route: `PUT /api/attempts/:id/draft`.
+
 # v2.1 — Departments, registration approval, roles and branding
 
 This release extends the existing MERN LMS in place. The stack, folder layout, authentication, API style and design are unchanged; no new npm dependencies were added.

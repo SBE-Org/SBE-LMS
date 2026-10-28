@@ -12,7 +12,7 @@ export default [
                     {
                         "title": "Who we are and what we do",
                         "type": "text",
-                        "body": "# Welcome to the team\n\nShaggar BPO Enterprise delivers customer contact, sales and back-office services for clients across Ethiopia and the region.\n\nAs an agent, **you are the voice of our clients**. Every conversation shapes how a customer feels about their brand.\n\n## What you will learn this week\n- How a shift is organised and what is expected of you\n- Our service standards and quality scoring\n- The systems you will use on every call\n\n> Tip: keep this course open during your first shifts and come back to it whenever you need a reminder.",
+                        "body": "# Welcome to the team\n\nShaggar BPO Enterprise delivers customer contact, sales and back-office services for clients across Ethiopia and the region.\n\nAs an agent, **you are the voice of our clients**. Every conversation shapes how a customer feels about their brand.\n\n## What you will learn this week\n- How a shift is organized and what is expected of you\n- Our service standards and quality scoring\n- The systems you will use on every call\n\n> Tip: keep this course open during your first shifts and come back to it whenever you need a reminder.",
                         "videoUrl": null,
                         "durationMin": 8
                     },
@@ -31,7 +31,7 @@ export default [
                     {
                         "title": "The five service standards",
                         "type": "text",
-                        "body": "# Our five service standards\n\n- **Greet** — use the approved opening within 3 seconds.\n- **Listen** — let the customer finish; take notes.\n- **Resolve** — aim to fix the issue on the first contact.\n- **Confirm** — summarise what you did and the next steps.\n- **Close** — use the approved closing and offer further help.\n\nQuality analysts score a sample of your calls against these five standards every week.",
+                        "body": "# Our five service standards\n\n- **Greet** — use the approved opening within 3 seconds.\n- **Listen** — let the customer finish; take notes.\n- **Resolve** — aim to fix the issue on the first contact.\n- **Confirm** — summarize what you did and the next steps.\n- **Close** — use the approved closing and offer further help.\n\nQuality analysts score a sample of your calls against these five standards every week.",
                         "videoUrl": null,
                         "durationMin": 12
                     },

@@ -7,9 +7,9 @@ import { fmtDate } from '../../lib/format.js';
 import Icon from '../../components/Icon.jsx';
 import { ActionButton, Badge, EmptyState, Guard } from '../../components/ui.jsx';
 
-const TABS = [['pending', 'Waiting for authorisation'], ['issued', 'Issued'], ['revoked', 'Revoked']];
+const TABS = [['pending', 'Waiting for authorization'], ['issued', 'Issued'], ['revoked', 'Revoked']];
 
-/** Issuing authority: authorise certificates of courses that require it (Department Heads, administrators). */
+/** Issuing authority: authorize certificates of courses that require it (Department Heads, administrators). */
 export default function CertificateApprovals() {
   const { meta } = useAuth();
   const { flash } = useFlash();
@@ -35,7 +35,7 @@ export default function CertificateApprovals() {
   return (
     <>
       <div className="page-head">
-        <div><h1>Certificate approvals</h1><p className="muted">Courses can require a Department Head or administrator to authorise certificates after the learner completes every requirement.</p></div>
+        <div><h1>Certificate approvals</h1><p className="muted">Courses can require a Department Head or administrator to authorize certificates after the learner completes every requirement.</p></div>
       </div>
       <nav className="tabs" aria-label="Filter by status">
         {TABS.map(([k, label]) => <Link key={k} to={`/manage/certificates${qs({ status: k })}`} aria-current={status === k ? 'page' : undefined}>{label}</Link>)}
@@ -43,7 +43,7 @@ export default function CertificateApprovals() {
       <Guard state={state}>
         {({ certificates, canRevoke }) => !certificates.length ? (
           <EmptyState icon="award" title={status === 'pending' ? 'Nothing waiting' : 'No certificates here'}>
-            <p className="muted">{status === 'pending' ? 'When a learner completes a course that requires authorisation, their certificate appears here.' : 'Nothing to show.'}</p>
+            <p className="muted">{status === 'pending' ? 'When a learner completes a course that requires authorization, their certificate appears here.' : 'Nothing to show.'}</p>
           </EmptyState>
         ) : (
           <div className="card table-wrap">
@@ -63,7 +63,7 @@ export default function CertificateApprovals() {
                       <Link className="btn btn-ghost btn-sm" to={`/certificates/${c.code}`}><Icon name="eye" />Preview</Link>{' '}
                       {c.status === 'pending' && (
                         <ActionButton className="btn btn-primary btn-sm" confirm={`Issue the certificate for ${c.courseTitle} to ${c.learnerName}?`} onAction={act(() => api.post(`/certificate-approvals/${c._id}/authorize`))}>
-                          <Icon name="check" />Authorise
+                          <Icon name="check" />Authorize
                         </ActionButton>
                       )}
                       {canRevoke && c.status === 'issued' && <button type="button" className="btn btn-ghost btn-sm danger" onClick={revoke(c)}>Revoke</button>}

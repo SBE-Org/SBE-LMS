@@ -142,7 +142,7 @@ export function canManageCourse(user, course) {
   return !!course?.department && scope.includes(String(course.department._id ?? course.department));
 }
 
-/** True if the user may authorise certificates for a course in this department. */
+/** True if the user may authorize certificates for a course in this department. */
 export function canAuthorizeCertificates(user, departmentId) {
   if (hasRole(user, 'admin')) return true;
   if (hasRole(user, 'department_head')) return inScope(assignedDepartmentIds(user), departmentId);

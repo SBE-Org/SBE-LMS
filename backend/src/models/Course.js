@@ -10,7 +10,7 @@ const courseSchema = new mongoose.Schema(
     status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
     selfEnrol: { type: Boolean, default: false },
     certificateEnabled: { type: Boolean, default: true },
-    /** When on, a finished learner's certificate waits for a Department Head / administrator to authorise it. */
+    /** When on, a finished learner's certificate waits for a Department Head / administrator to authorize it. */
     certificateRequiresApproval: { type: Boolean, default: false },
     /** Owning department. null = institution-wide (managed by administrators and trainers). */
     department: { type: ObjectId, ref: 'Department', default: null, index: true },
@@ -31,9 +31,16 @@ const lessonSchema = new mongoose.Schema({
   module: { type: ObjectId, ref: 'Module', required: true, index: true },
   course: { type: ObjectId, ref: 'Course', required: true, index: true },
   title: { type: String, required: true, trim: true, maxlength: 200 },
-  type: { type: String, enum: ['text', 'video', 'file'], default: 'text' },
+  type: { type: String, enum: ['text', 'video', 'audio', 'file'], default: 'text' },
   body: { type: String, default: '' },
   videoUrl: { type: String, maxlength: 500, default: null },
+  /** Audio lesson: a direct link to an audio file (or upload the file instead). */
+  audioUrl: { type: String, maxlength: 500, default: null },
+  /** Extra links shown with the lesson (any type): websites, documents, forms, recordings… */
+  links: {
+    type: [{ _id: false, title: { type: String, trim: true, maxlength: 200 }, url: { type: String, trim: true, maxlength: 1000 } }],
+    default: [],
+  },
   // Uploaded file, stored in GridFS
   file: {
     id: { type: ObjectId, default: null },

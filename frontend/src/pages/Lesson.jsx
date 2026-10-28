@@ -20,6 +20,23 @@ function VideoEmbed({ url }) {
   );
 }
 
+/** Extra links of a lesson. They open in a new tab, so the lesson stays open. */
+function LessonLinks({ links }) {
+  if (!links?.length) return null;
+  return (
+    <section className="lesson-links-view">
+      <h2>Links</h2>
+      <ul>
+        {links.map((x, i) => (
+          <li key={i}>
+            <a href={x.url} target="_blank" rel="noopener noreferrer"><Icon name="link" /><span>{x.title || x.url}</span></a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function LessonFile({ lesson }) {
   const url = apiUrl(lesson.fileUrl);
   const kind = fileKind(lesson.file.name);
@@ -80,8 +97,10 @@ export default function LessonPage() {
               </header>
 
               {lesson.videoUrl && <VideoEmbed url={lesson.videoUrl} />}
+              {lesson.audioUrl && <audio controls preload="metadata" src={lesson.audioUrl} className="audio" />}
               {lesson.fileUrl && <LessonFile lesson={lesson} />}
               <RichText text={lesson.body} />
+              <LessonLinks links={lesson.links} />
 
               <footer className="lesson-foot">
                 {prev ? <Link className="btn btn-ghost" to={`/lessons/${prev._id}`}><Icon name="arrow-left" />Previous</Link> : <span />}

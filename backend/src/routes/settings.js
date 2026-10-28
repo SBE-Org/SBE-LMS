@@ -76,7 +76,7 @@ router.put('/admin/settings', ...admin, async (req, res) => {
     if (x.colors) {
       for (const k of ['primary', 'primaryDark', 'accent']) {
         if (x.colors[k] === undefined) continue;
-        if (!HEX.test(String(x.colors[k]))) errors.push(`The ${k === 'primaryDark' ? 'dark primary' : k} colour must look like #0e5e6f.`);
+        if (!HEX.test(String(x.colors[k]))) errors.push(`The ${k === 'primaryDark' ? 'dark primary' : k} color must look like #0e5e6f.`);
         else doc.branding.colors[k] = String(x.colors[k]).toLowerCase();
       }
     }

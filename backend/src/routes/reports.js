@@ -179,7 +179,7 @@ router.get('/quizzes/:id', async (req, res) => {
       const answered = r?.answered || 0;
       return { ...q, answered, correct: r?.correct || 0, rate: answered ? Math.round((r.correct * 100) / answered) : null };
     });
-    attempts = (await QuizAttempt.find(match, '-answers -questionOrder')
+    attempts = (await QuizAttempt.find(match, '-answers -questionOrder -draft')
       .populate({ path: 'user', select: 'name team', populate: { path: 'team', select: 'name' } })
       .sort({ submittedAt: -1 }).limit(200).lean())
       .filter((a) => a.user)
@@ -198,7 +198,7 @@ router.get('/users/:id', async (req, res) => {
   rows.sort((a, b) => a.course.title.localeCompare(b.course.title));
   const [progress, totals] = await Promise.all([progressMap([person._id]), courseTotals()]);
   const t = today();
-  const attempts = (await QuizAttempt.find({ user: person._id, status: 'submitted' }, '-answers -questionOrder')
+  const attempts = (await QuizAttempt.find({ user: person._id, status: 'submitted' }, '-answers -questionOrder -draft')
     .populate('quiz', 'title').populate('course', 'title').sort({ submittedAt: -1 }).lean())
     .filter((a) => a.quiz && a.course)
     .map((a) => ({ _id: a._id, quizTitle: a.quiz.title, courseTitle: a.course.title, percent: a.percent, passed: a.passed, submittedAt: a.submittedAt }));
@@ -234,7 +234,7 @@ router.get('/export', async (req, res) => {
 
   if (type === 'attempts') {
     const rows = userIds.length
-      ? await QuizAttempt.find({ status: 'submitted', user: { $in: userIds.map(toId) } }, '-answers -questionOrder')
+      ? await QuizAttempt.find({ status: 'submitted', user: { $in: userIds.map(toId) } }, '-answers -questionOrder -draft')
         .populate({ path: 'user', select: 'name email employeeId team', populate: { path: 'team', select: 'name' } })
         .populate('quiz', 'title').populate('course', 'title').sort({ submittedAt: -1 }).lean()
       : [];

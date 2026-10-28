@@ -12,6 +12,8 @@ const PATHS = {
   check: <path d="M5 12.5l4.5 4.5L19 7" />,
   play: <path d="M7 4l13 8-13 8z" />,
   file: <><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /></>,
+  audio: <><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></>,
+  link: <><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" /><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" /></>,
   text: <><path d="M5 6h14" /><path d="M5 11h14" /><path d="M5 16h9" /></>,
   quiz: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" /><circle cx="12" cy="17" r=".6" fill="currentColor" /></>,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,

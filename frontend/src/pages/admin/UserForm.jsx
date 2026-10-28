@@ -118,7 +118,7 @@ export default function UserForm() {
                   {role === 'registrar' && (
                     <label className="check"><input type="checkbox" checked={form.permApproveRegistrations} onChange={set('permApproveRegistrations')} /> <span><strong>May approve or reject registrations</strong> in their departments (normally the Department Head’s decision)</span></label>
                   )}
-                  <label className="check"><input type="checkbox" checked={form.permAuthorizeCertificates} onChange={set('permAuthorizeCertificates')} /> <span><strong>May authorise certificates</strong>{role === 'registrar' ? ' in their departments' : ''}</span></label>
+                  <label className="check"><input type="checkbox" checked={form.permAuthorizeCertificates} onChange={set('permAuthorizeCertificates')} /> <span><strong>May authorize certificates</strong>{role === 'registrar' ? ' in their departments' : ''}</span></label>
                 </fieldset>
               )}
 
@@ -127,9 +127,9 @@ export default function UserForm() {
                 <ul>
                   <li><strong>Student</strong> — registers, and after approval takes courses and quizzes and earns certificates.</li>
                   <li><strong>Registrar</strong> — creates student accounts, completes and corrects registrations, tracks and exports them. Cannot approve unless permitted above.</li>
-                  <li><strong>Department Head</strong> — reviews and decides registrations, builds and runs the courses of their departments, sees their reports and authorises certificates.</li>
+                  <li><strong>Department Head</strong> — reviews and decides registrations, builds and runs the courses of their departments, sees their reports and authorizes certificates.</li>
                   <li><strong>Team Lead</strong> — reports for the teams they lead (set the lead on the team page).</li>
-                  <li><strong>Trainer</strong> — builds all courses and quizzes, enrols people and teams, sees all reports.</li>
+                  <li><strong>Trainer</strong> — builds all courses and quizzes, enrolls people and teams, sees all reports.</li>
                   <li><strong>System Administrator</strong> — everything, including people, departments, branding, settings and the audit log.</li>
                 </ul>
               </details>

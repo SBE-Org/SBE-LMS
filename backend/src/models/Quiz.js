@@ -56,6 +56,13 @@ const attemptSchema = new mongoose.Schema({
   percent: { type: Number, default: 0 },
   passed: { type: Boolean, default: false },
   answers: [answerSchema],
+  /**
+   * Answers saved while the attempt is open ({ questionId: [choiceId…] }). When the time limit runs out and the
+   * browser could not submit (closed tab, lost connection), the attempt is closed and graded with these.
+   */
+  draft: { type: mongoose.Schema.Types.Mixed, default: {} },
+  draftAt: { type: Date, default: null },
 });
 attemptSchema.index({ user: 1, quiz: 1 });
+attemptSchema.index({ status: 1, startedAt: 1 });
 export const QuizAttempt = mongoose.model('QuizAttempt', attemptSchema);

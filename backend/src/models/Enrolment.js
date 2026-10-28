@@ -45,7 +45,7 @@ const certificateSchema = new mongoose.Schema({
   issuedAt: { type: Date, default: Date.now },
   /**
    * issued  = valid (all certificates created before this field existed count as issued)
-   * pending = course finished, waiting for the issuing authority to authorise it
+   * pending = course finished, waiting for the issuing authority to authorize it
    * revoked = withdrawn by an administrator
    */
   status: { type: String, enum: ['issued', 'pending', 'revoked'], default: 'issued', index: true },

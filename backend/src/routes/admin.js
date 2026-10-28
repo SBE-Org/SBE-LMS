@@ -85,7 +85,7 @@ async function saveUser(req, res, existing) {
     team: b.team === undefined && existing ? existing.team : isId(String(b.team || '')) ? toId(b.team) : null,
     // Fields left out of the request keep their current value (older clients do not send them).
     department: b.department === undefined ? existing?.department ?? null : isId(String(b.department || '')) ? toId(b.department) : null,
-    // Only Department Heads and Registrars carry a list of authorised departments.
+    // Only Department Heads and Registrars carry a list of authorized departments.
     departments: !['department_head', 'registrar'].includes(role) ? []
       : b.departments === undefined ? existing?.departments ?? [] : deptIds.map(toId),
     permissions: {

@@ -134,7 +134,7 @@ export default function ReportsOverview() {
           ) : null}
 
           <div className="stats">
-            <div className="stat"><span className="stat-label">Active learners</span><span className="stat-value">{summary.learners}</span><span className="stat-sub">{summary.enrolments} enrolments</span></div>
+            <div className="stat"><span className="stat-label">Active learners</span><span className="stat-value">{summary.learners}</span><span className="stat-sub">{summary.enrolments} enrollments</span></div>
             <div className="stat"><span className="stat-label">Completion rate</span><span className="stat-value">{summary.completionRate}%</span><span className="stat-sub">{summary.completed} completed</span></div>
             <div className="stat"><span className="stat-label">Average quiz score</span><span className="stat-value">{pctText(summary.avgScore)}</span><span className="stat-sub">best attempt per quiz</span></div>
             <div className={`stat ${summary.overdue ? 'stat-alert' : ''}`}><span className="stat-label">Overdue</span><span className="stat-value">{summary.overdue}</span><span className="stat-sub">{summary.certificates} certificates issued</span></div>
@@ -157,7 +157,7 @@ export default function ReportsOverview() {
                       <td className="num">{pctText(c.avgScore)}</td>
                     </tr>
                   ))}
-                  {!courses.length && <tr><td colSpan={7} className="muted center pad">No enrolments yet.</td></tr>}
+                  {!courses.length && <tr><td colSpan={7} className="muted center pad">No enrollments yet.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -168,7 +168,7 @@ export default function ReportsOverview() {
               <h2>By department</h2>
               <div className="card table-wrap">
                 <table className="table">
-                  <thead><tr><th>Department</th><th className="num">People</th><th className="num">Enrolments</th><th>Completion</th><th className="num">Overdue</th><th className="num">Avg score</th></tr></thead>
+                  <thead><tr><th>Department</th><th className="num">People</th><th className="num">Enrollments</th><th>Completion</th><th className="num">Overdue</th><th className="num">Avg score</th></tr></thead>
                   <tbody>
                     {departments.map((t) => (
                       <tr key={t._id || 'none'}>
@@ -191,7 +191,7 @@ export default function ReportsOverview() {
               <h2>By team</h2>
               <div className="card table-wrap">
                 <table className="table">
-                  <thead><tr><th>Team</th><th className="num">People</th><th className="num">Enrolments</th><th>Completion</th><th className="num">Overdue</th><th className="num">Avg score</th></tr></thead>
+                  <thead><tr><th>Team</th><th className="num">People</th><th className="num">Enrollments</th><th>Completion</th><th className="num">Overdue</th><th className="num">Avg score</th></tr></thead>
                   <tbody>
                     {teams.map((t) => (
                       <tr key={t._id || 'none'}>

@@ -68,7 +68,7 @@ export default function Builder() {
               <Link className="btn btn-ghost" to={`/courses/${course._id}`}><Icon name="eye" />Preview</Link>
               <Link className="btn btn-ghost" to={`/manage/courses/${course._id}/edit`}><Icon name="edit" />Settings</Link>
               <Link className="btn btn-ghost" to={`/reports/courses/${course._id}`}><Icon name="chart" />Report</Link>
-              <Link className="btn btn-primary" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Enrol learners</Link>
+              <Link className="btn btn-primary" to={`/manage/courses/${course._id}/enrolments`}><Icon name="users" />Enroll learners</Link>
             </div>
           </div>
 

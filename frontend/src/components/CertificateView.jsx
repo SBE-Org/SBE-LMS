@@ -7,7 +7,7 @@ import Icon from './Icon.jsx';
  * The certificate itself, drawn from the administrator's branding settings.
  * Used by the certificate page (screen, print, PDF) and by the live preview in Settings.
  *
- * The logo honours two placements: "certificateTemplate" (screen and print) and
+ * The logo honors two placements: "certificateTemplate" (screen and print) and
  * "certificatePdf" (downloaded PDF). See lib/certificatePdf.js for the PDF side.
  */
 const CertificateView = forwardRef(function CertificateView({ cert, branding: b, verifyUrl, logoSrc }, ref) {
@@ -37,7 +37,7 @@ const CertificateView = forwardRef(function CertificateView({ cert, branding: b,
     <div key={`sig${i}`} className="cert-sig">
       {s.signatureUrl ? <img className="cert-signature" src={apiUrl(s.signatureUrl)} alt="" crossOrigin="anonymous" /> : <span className="cert-signature-space" />}
       <span className="cert-line" />
-      <small>{s.title || 'Authorised signatory'}</small>
+      <small>{s.title || 'Authorized signatory'}</small>
       <strong>{s.name || org}</strong>
     </div>
   );
@@ -62,7 +62,7 @@ const CertificateView = forwardRef(function CertificateView({ cert, branding: b,
     <div className={`certificate ${cert.status && cert.status !== 'issued' ? 'is-draft' : ''}`} ref={ref}>
       <div className="cert-inner">
         {position === 'header' && logo}
-        {cert.status === 'pending' && <div className="cert-watermark" aria-hidden="true">Awaiting authorisation</div>}
+        {cert.status === 'pending' && <div className="cert-watermark" aria-hidden="true">Awaiting authorization</div>}
         {cert.status === 'revoked' && <div className="cert-watermark" aria-hidden="true">Revoked</div>}
         {position === 'top' && logo}
         <p className="cert-kicker">{c.title || 'Certificate of Completion'}</p>

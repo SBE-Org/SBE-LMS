@@ -52,7 +52,7 @@ function AssignForm({ data, onDone }) {
   return (
     <form onSubmit={submit} className="card form">
       <h2>Assign this course</h2>
-      {!canUseTeams && <p className="muted small">You can enrol approved students of your department(s). Students still waiting for registration approval are not listed.</p>}
+      {!canUseTeams && <p className="muted small">You can enroll approved students of your department(s). Students still waiting for registration approval are not listed.</p>}
       <div className={canUseTeams ? 'grid-2' : ''}>
         {canUseTeams && (
         <div className="field">
@@ -67,7 +67,7 @@ function AssignForm({ data, onDone }) {
             {!teams.length && <p className="muted small">No teams yet. <Link to="/admin/teams/new">Create one</Link>.</p>}
           </div>
           <label className="check small">
-            <input type="checkbox" checked={autoEnrolNew} onChange={(e) => setAutoEnrolNew(e.target.checked)} /> <span>Also enrol people who join these teams later</span>
+            <input type="checkbox" checked={autoEnrolNew} onChange={(e) => setAutoEnrolNew(e.target.checked)} /> <span>Also enroll people who join these teams later</span>
           </label>
         </div>
         )}
@@ -85,7 +85,7 @@ function AssignForm({ data, onDone }) {
       </div>
       <div className="actions">
         <label className="field inline-field"><span>Due date <small className="muted">(optional)</small></span><input type="date" min={today} value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label>
-        <button className="btn btn-primary" type="submit" disabled={busy}><Icon name="users" />Enrol</button>
+        <button className="btn btn-primary" type="submit" disabled={busy}><Icon name="users" />Enroll</button>
       </div>
     </form>
   );
@@ -96,7 +96,7 @@ export default function Enrolments() {
   const { meta } = useAuth();
   const { flash } = useFlash();
   const state = useApi(`/manage/courses/${id}/enrolments`);
-  useTitle(state.data ? `Enrolments: ${state.data.course.title}` : 'Enrolments', meta.appName);
+  useTitle(state.data ? `Enrollments: ${state.data.course.title}` : 'Enrollments', meta.appName);
 
   const act = (fn) => async () => {
     try {
@@ -114,9 +114,9 @@ export default function Enrolments() {
         const { course, enrolled, teamAssignments } = data;
         return (
           <>
-            <Crumbs items={[['Manage courses', '/manage/courses'], [course.title, `/manage/courses/${course._id}`], ['Enrolments']]} />
+            <Crumbs items={[['Manage courses', '/manage/courses'], [course.title, `/manage/courses/${course._id}`], ['Enrollments']]} />
             <div className="page-head">
-              <div><h1>Enrolments</h1><p className="muted">{course.title} · {plural(enrolled.length, 'learner')} enrolled</p></div>
+              <div><h1>Enrollments</h1><p className="muted">{course.title} · {plural(enrolled.length, 'learner')} enrolled</p></div>
               <Link className="btn btn-ghost" to={`/reports/courses/${course._id}`}><Icon name="chart" />Course report</Link>
             </div>
 
@@ -124,7 +124,7 @@ export default function Enrolments() {
 
             {teamAssignments.length > 0 && (
               <section className="section">
-                <h2>Automatic team enrolment</h2>
+                <h2>Automatic team enrollment</h2>
                 <div className="card list">
                   {teamAssignments.map((ta) => (
                     <div key={ta._id} className="list-row">
